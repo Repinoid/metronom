@@ -62,7 +62,7 @@ func getMetrix(memStor *MemStorage) error {
 func postMetric(metricType, metricName, metricValue string) int {
 	host := "http://localhost:8080"
 	url := host + "/update/" + metricType + "/" + metricName + "/" + metricValue
-	resp, err := http.Post(url, "text/plain", strings.NewReader(url))
+	resp, err := http.Post(url, "text/plain", nil)
 	if err != nil {
 		return resp.StatusCode
 	}
