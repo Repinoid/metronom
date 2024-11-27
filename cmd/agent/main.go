@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -61,7 +62,7 @@ func getMetrix(memStor *MemStorage) error {
 func postMetric(metricType, metricName, metricValue string) int {
 	host := "http://localhost:8080"
 	url := host + "/update/" + metricType + "/" + metricName + "/" + metricValue
-	resp, err := http.Post(url, "text/plain", nil)
+	resp, err := http.Post(url, "text/plain", strings.NewReader(url))
 	if err != nil {
 		return resp.StatusCode
 	}
