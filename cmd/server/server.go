@@ -42,8 +42,8 @@ func (ms *MemStorage) getCounterValue(name string, value *string) int {
 }
 func (ms *MemStorage) getGaugeValue(name string, value *string) int {
 	if _, ok := ms.gau[name]; ok {
-		//		*value = strconv.FormatFloat(float64(ms.gau[name]), 'f', 4, 64)
-		*value = fmt.Sprintf("%f", ms.gau[name])
+		*value = strconv.FormatFloat(float64(ms.gau[name]), 'f', -1, 64)
+		//	*value = fmt.Sprintf("%f", ms.gau[name])
 		return http.StatusOK
 	}
 	return http.StatusNotFound
