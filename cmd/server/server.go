@@ -83,7 +83,7 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	}
 
 	for nam, val := range memStor.gau {
-		fmt.Fprintf(rwr, "Gauge Metric name   %20s\t\tvalue\t%6.4f\n", nam, val)
+		fmt.Fprintf(rwr, "Gauge Metric name   %20s\t\tvalue\t%f\n", nam, val)
 	}
 	for nam, val := range memStor.count {
 		fmt.Fprintf(rwr, "Counter Metric name %20s\t\tvalue\t%d\n", nam, val)
@@ -92,7 +92,7 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 }
 func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	val := "badly"
-	status := http.StatusBadRequest
+	status := http.StatusNotFound
 	metricType := req.PathValue("metricType")
 	metricName := req.PathValue("metricName")
 	if metricType == "gauge" {
@@ -105,7 +105,7 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 		rwr.WriteHeader(http.StatusOK)
 		fmt.Fprint(rwr, val)
 	} else {
-		rwr.WriteHeader(http.StatusBadRequest)
+		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, "BadRequest, No value for %s of %s type\n", metricName, metricType)
 	}
 
