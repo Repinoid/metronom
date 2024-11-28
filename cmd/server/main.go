@@ -64,8 +64,14 @@ func run() error {
 	router.HandleFunc("POST /update/{metricType}/{metricName}/{metricValue}", treatMetric)
 	router.HandleFunc("GET /value/{metricType}/{metricName}", getMetric)
 	router.HandleFunc("GET /", getAllMetrix)
+	router.HandleFunc("POST /", badPost)
 
 	return http.ListenAndServe(localPort, router)
+}
+
+func badPost(rwr http.ResponseWriter, req *http.Request) {
+	rwr.WriteHeader(http.StatusNotFound)
+	fmt.Fprintf(rwr, "POST http.StatusNotFound with %s\n", req.URL.Path)
 }
 
 func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
@@ -109,6 +115,10 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 	metricType := req.PathValue("metricType")
 	metricName := req.PathValue("metricName")
 	metricValue := req.PathValue("metricValue")
+	if metricValue == "" {
+		rwr.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	if metricType != "gauge" && metricType != "counter" {
 		rwr.WriteHeader(http.StatusBadRequest)
