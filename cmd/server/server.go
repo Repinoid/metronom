@@ -42,7 +42,8 @@ func (ms *MemStorage) getCounterValue(name string, value *string) int {
 }
 func (ms *MemStorage) getGaugeValue(name string, value *string) int {
 	if _, ok := ms.gau[name]; ok {
-		*value = strconv.FormatFloat(float64(ms.gau[name]), 'f', 4, 64)
+		//		*value = strconv.FormatFloat(float64(ms.gau[name]), 'f', 4, 64)
+		*value = fmt.Sprintf("%f", ms.gau[name])
 		return http.StatusOK
 	}
 	return http.StatusNotFound
@@ -101,11 +102,11 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 		status = memStor.getCounterValue(metricName, &val)
 	}
 	if status == http.StatusOK {
-		fmt.Fprint(rwr, val)
 		rwr.WriteHeader(http.StatusOK)
+		fmt.Fprint(rwr, val)
 	} else {
-		fmt.Fprintf(rwr, "BadRequest, No value for %s of %s type\n", metricName, metricType)
 		rwr.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(rwr, "BadRequest, No value for %s of %s type\n", metricName, metricType)
 	}
 
 }
