@@ -1,10 +1,11 @@
 package main
 
 import (
-	//"fmt"
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type gauge float64
@@ -61,11 +62,12 @@ func main() {
 
 func run() error {
 
-	router := http.NewServeMux()
-	router.HandleFunc("POST /update/{metricType}/{metricName}/{metricValue}", treatMetric)
-	router.HandleFunc("GET /value/{metricType}/{metricName}", getMetric)
-	router.HandleFunc("GET /", getAllMetrix)
-	router.HandleFunc("POST /", badPost)
+	//	router := http.NewServeMux()
+	router := mux.NewRouter()
+	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", treatMetric).Methods("POST")
+	router.HandleFunc("/value/{metricType}/{metricName}", getMetric).Methods("GET")
+	router.HandleFunc("/", getAllMetrix).Methods("GET")
+	router.HandleFunc("/", badPost).Methods("POST")
 
 	return http.ListenAndServe(localPort, router)
 }
@@ -83,7 +85,8 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	}
 
 	for nam, val := range memStor.gau {
-		fmt.Fprintf(rwr, "Gauge Metric name   %20s\t\tvalue\t%f\n", nam, val)
+		flo := strconv.FormatFloat(float64(val), 'f', -1, 64)
+		fmt.Fprintf(rwr, "Gauge Metric name   %20s\t\tvalue\t%s\n", nam, flo)
 	}
 	for nam, val := range memStor.count {
 		fmt.Fprintf(rwr, "Counter Metric name %20s\t\tvalue\t%d\n", nam, val)
@@ -91,10 +94,13 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	rwr.WriteHeader(http.StatusOK)
 }
 func getMetric(rwr http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
 	val := "badly"
 	status := http.StatusNotFound
-	metricType := req.PathValue("metricType")
-	metricName := req.PathValue("metricName")
+	metricType := vars["metricType"]
+	metricName := vars["metricName"]
+	//	metricType := req.PathValue("metricType")
+	//	metricName := req.PathValue("metricName")
 	if metricType == "gauge" {
 		status = memStor.getGaugeValue(metricName, &val)
 	}
@@ -112,10 +118,14 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 }
 
 func treatMetric(rwr http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
 	rwr.Header().Set("Content-Type", "text/plain")
-	metricType := req.PathValue("metricType")
-	metricName := req.PathValue("metricName")
-	metricValue := req.PathValue("metricValue")
+	metricType := vars["metricType"]
+	metricName := vars["metricName"]
+	metricValue := vars["metricValue"]
+	//	metricType := req.PathValue("metricType")
+	//	metricName := req.PathValue("metricName")
+	//	metricValue := req.PathValue("metricValue")
 	if metricValue == "" {
 		rwr.WriteHeader(http.StatusNotFound)
 		return
