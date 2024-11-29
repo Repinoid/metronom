@@ -110,8 +110,20 @@ func run() error {
 }
 
 func useClientArguments() int {
-	args := os.Args[1:]
+	enva, exists := os.LookupEnv("ADDRESS")
+	if exists {
+		host = enva
+	}
+	enva, exists = os.LookupEnv("REPORT_INTERVAL")
+	if exists {
+		reportInterval, _ = strconv.Atoi(enva)
+	}
+	enva, exists = os.LookupEnv("POLL_INTERVAL")
+	if exists {
+		pollInterval, _ = strconv.Atoi(enva)
+	}
 
+	args := os.Args[1:]
 	for _, a := range args {
 		if len(a) < 3 {
 			fmt.Printf("unknown Argument -  %s\n", a)
@@ -121,15 +133,25 @@ func useClientArguments() int {
 		tail := a[3:]
 		switch flagus {
 		case "-a=":
+			if _, exists := os.LookupEnv("ADDRESS"); exists {
+				continue
+			}
 			host = a[3:]
 		case "-r=":
+			if _, exists := os.LookupEnv("REPORT_INTERVAL"); !exists {
+				continue
+			}
 			secs, err := strconv.Atoi(tail)
 			if err != nil {
 				fmt.Printf("Bad Argument for reportInterval with %s\n", tail)
 				return 2
 			}
 			reportInterval = secs
+
 		case "-p=":
+			if _, exists := os.LookupEnv("POLL_INTERVAL"); !exists {
+				continue
+			}
 			secs, err := strconv.Atoi(tail)
 			if err != nil {
 				fmt.Printf("Bad Argument for pollInterval with %s\n", tail)

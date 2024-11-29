@@ -151,8 +151,12 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 }
 
 func useServerArguments() int {
+	hoster, exists := os.LookupEnv("ADDRESS")
+	if exists {
+		host = hoster
+		return 0
+	}
 	args := os.Args[1:]
-
 	for _, a := range args {
 		if len(a) < 3 {
 			fmt.Printf("unknown Argument -  %s\n", a)
@@ -167,6 +171,5 @@ func useServerArguments() int {
 			return 4
 		}
 	}
-	//fmt.Println(host, pollInterval, reportInterval)
 	return 0
 }
