@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math/rand/v2"
 	"net/http"
+	"os"
 	"runtime"
 	"strconv"
 	"time"
@@ -18,6 +20,9 @@ type MemStorage struct {
 
 var memStor *MemStorage
 var PollCount int
+var host = "localhost:8080"
+var reportInterval = 10
+var pollInterval = 2
 
 func getMetrix(memStor *MemStorage) error {
 	var mS runtime.MemStats
@@ -59,8 +64,8 @@ func getMetrix(memStor *MemStorage) error {
 	return nil
 }
 func postMetric(metricType, metricName, metricValue string) int {
-	host := "http://localhost:8080"
-	url := host + "/update/" + metricType + "/" + metricName + "/" + metricValue
+
+	url := "http://" + host + "/update/" + metricType + "/" + metricName + "/" + metricValue
 	resp, err := http.Post(url, "text/plain", nil)
 	if err != nil {
 		return resp.StatusCode
@@ -69,6 +74,10 @@ func postMetric(metricType, metricName, metricValue string) int {
 	return resp.StatusCode
 }
 func main() {
+	if useClientArguments() != 0 {
+		return
+	}
+
 	if err := run(); err != nil {
 		panic(err)
 	}
@@ -78,12 +87,12 @@ func run() error {
 	memStor = new(MemStorage)
 
 	for {
-		for i := 0; i < 5; i++ {
+		for i := 0; i < reportInterval/pollInterval; i++ {
 			err := getMetrix(memStor)
 			if err != nil {
 				log.Println(err)
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(time.Duration(pollInterval) * time.Second)
 		}
 		for name, value := range memStor.gau {
 			status := postMetric("gauge", name, strconv.FormatFloat(float64(value), 'f', 4, 64))
@@ -98,4 +107,39 @@ func run() error {
 			}
 		}
 	}
+}
+
+func useClientArguments() int {
+	args := os.Args[1:]
+
+	for _, a := range args {
+		if len(a) < 3 {
+			fmt.Printf("unknown Argument -  %s\n", a)
+			return 1
+		}
+		flagus := a[:3]
+		tail := a[3:]
+		switch flagus {
+		case "-a=":
+			host = a[3:]
+		case "-r=":
+			secs, err := strconv.Atoi(tail)
+			if err != nil {
+				fmt.Printf("Bad Argument for reportInterval with %s\n", tail)
+				return 2
+			}
+			reportInterval = secs
+		case "-p=":
+			secs, err := strconv.Atoi(tail)
+			if err != nil {
+				fmt.Printf("Bad Argument for pollInterval with %s\n", tail)
+				return 3
+			}
+			pollInterval = secs
+		default:
+			fmt.Printf("unknown Argument -  %s\n", a)
+			return 4
+		}
+	}
+	return 0
 }
