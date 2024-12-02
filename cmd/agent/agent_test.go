@@ -1,19 +1,10 @@
 package main
 
 import (
-	//	"net/http"
+	"net/http"
 	"testing"
 )
 
-func TestGetMetrix(t *testing.T) {
-	memStor = new(MemStorage)
-	result1 := getMetrix(memStor)
-	if result1 != nil {
-		t.Errorf("Result was incorrect, got: %d, want: %s.", result1, "nil")
-	}
-}
-
-/*
 func TestPostMetric(t *testing.T) {
 	result1 := postMetric("gauge", "Alloc", "55.55")
 	if result1 != http.StatusOK {
@@ -21,11 +12,10 @@ func TestPostMetric(t *testing.T) {
 	}
 	result2 := postMetric("gaug", "Alloc", "55.55")
 	if result2 != http.StatusBadRequest {
-		t.Errorf("Result was incorrect, got: %d, want: %s.", result2, "http.StatusBadRequest")
+		t.Errorf("Result was incorrect, got: %d, want: %s.", result1, "http.StatusBadRequest")
 	}
 	result3 := postMetric("gauge", "Alloc", "a55.55")
 	if result3 != http.StatusBadRequest {
-		t.Errorf("Result was incorrect, got: %d, want: %s.", result3, "http.StatusBadRequest")
+		t.Errorf("Result was incorrect, got: %d, want: %s.", result1, "http.StatusBadRequest")
 	}
 }
-*/

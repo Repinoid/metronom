@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -16,49 +15,15 @@ type MemStorage struct {
 	count map[string]counter
 }
 
+var memStor MemStorage
 var host = "localhost:8080"
 
-func (ms *MemStorage) initMemStorage() error {
-	ms.gau = make(map[string]gauge)
-	ms.count = make(map[string]counter)
-	return nil
-}
-func (ms *MemStorage) addGauge(name string, value gauge) error {
-	ms.gau[name] = value
-	return nil
-}
-func (ms *MemStorage) addCounter(name string, value counter) error {
-	if _, ok := ms.count[name]; ok {
-		ms.count[name] += value
-		return nil
-	}
-	ms.count[name] = value
-	return nil
-}
-func (ms *MemStorage) getCounterValue(name string, value *string) int {
-	if _, ok := ms.count[name]; ok {
-		*value = strconv.FormatInt(int64(ms.count[name]), 10)
-		return http.StatusOK
-	}
-	return http.StatusNotFound
-}
-func (ms *MemStorage) getGaugeValue(name string, value *string) int {
-	if _, ok := ms.gau[name]; ok {
-		*value = strconv.FormatFloat(float64(ms.gau[name]), 'f', -1, 64)
-		return http.StatusOK
-	}
-	return http.StatusNotFound
-}
-
-var memStor *MemStorage
-
 func main() {
-	if useServerArguments() != 0 {
+	if faa4server() != 0 {
 		return
 	}
 
-	memStor = new(MemStorage)
-	memStor.initMemStorage()
+	memStor = newMemStorage()
 	if err := run(); err != nil {
 		panic(err)
 	}
@@ -76,17 +41,19 @@ func run() error {
 }
 
 func badPost(rwr http.ResponseWriter, req *http.Request) {
+	rwr.Header().Set("Content-Type", "text/plain")
 	rwr.WriteHeader(http.StatusNotFound)
-	fmt.Fprintf(rwr, "POST http.StatusNotFound with %s\n", req.URL.Path)
+	//	fmt.Fprintf(rwr, "POST http.StatusNotFound with %s\n", req.URL.Path)
+	fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 }
 
 func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
+	rwr.Header().Set("Content-Type", "text/plain")
 	if req.URL.Path != "/" {
 		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, "BadRequest with %s\n", req.URL.Path)
+		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-
 	for nam, val := range memStor.gau {
 		flo := strconv.FormatFloat(float64(val), 'f', -1, 64)
 		fmt.Fprintf(rwr, "Gauge Metric name   %20s\t\tvalue\t%s\n", nam, flo)
@@ -97,6 +64,7 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	rwr.WriteHeader(http.StatusOK)
 }
 func getMetric(rwr http.ResponseWriter, req *http.Request) {
+	rwr.Header().Set("Content-Type", "text/plain")
 	vars := mux.Vars(req)
 	val := "badly"
 	status := http.StatusNotFound
@@ -115,10 +83,10 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, "BadRequest, No value for %s of %s type\n", metricName, metricType)
 	}
-
 }
 
 func treatMetric(rwr http.ResponseWriter, req *http.Request) {
+	rwr.Header().Set("Content-Type", "text/plain")
 	vars := mux.Vars(req)
 	rwr.Header().Set("Content-Type", "text/plain")
 	metricType := vars["metricType"]
@@ -148,28 +116,4 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 		memStor.addGauge(metricName, gauge(value))
 	}
 	rwr.WriteHeader(http.StatusOK)
-}
-
-func useServerArguments() int {
-	hoster, exists := os.LookupEnv("ADDRESS")
-	if exists {
-		host = hoster
-		return 0
-	}
-	args := os.Args[1:]
-	for _, a := range args {
-		if len(a) < 3 {
-			fmt.Printf("unknown Argument -  %s\n", a)
-			return 1
-		}
-		flagus := a[:3]
-		switch flagus {
-		case "-a=":
-			host = a[3:]
-		default:
-			fmt.Printf("unknown Argument -  %s\n", a)
-			return 4
-		}
-	}
-	return 0
 }

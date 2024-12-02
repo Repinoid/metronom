@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math/rand/v2"
 	"net/http"
-	"os"
 	"runtime"
 	"strconv"
 	"time"
@@ -74,7 +72,7 @@ func postMetric(metricType, metricName, metricValue string) int {
 	return resp.StatusCode
 }
 func main() {
-	if useClientArguments() != 0 {
+	if faa4Agent() != 0 {
 		return
 	}
 
@@ -107,61 +105,4 @@ func run() error {
 			}
 		}
 	}
-}
-
-func useClientArguments() int {
-	enva, exists := os.LookupEnv("ADDRESS")
-	if exists {
-		host = enva
-	}
-	enva, exists = os.LookupEnv("REPORT_INTERVAL")
-	if exists {
-		reportInterval, _ = strconv.Atoi(enva)
-	}
-	enva, exists = os.LookupEnv("POLL_INTERVAL")
-	if exists {
-		pollInterval, _ = strconv.Atoi(enva)
-	}
-
-	args := os.Args[1:]
-	for _, a := range args {
-		if len(a) < 3 {
-			fmt.Printf("unknown Argument -  %s\n", a)
-			return 1
-		}
-		flagus := a[:3]
-		tail := a[3:]
-		switch flagus {
-		case "-a=":
-			if _, exists := os.LookupEnv("ADDRESS"); exists {
-				continue
-			}
-			host = a[3:]
-		case "-r=":
-			if _, exists := os.LookupEnv("REPORT_INTERVAL"); !exists {
-				continue
-			}
-			secs, err := strconv.Atoi(tail)
-			if err != nil {
-				fmt.Printf("Bad Argument for reportInterval with %s\n", tail)
-				return 2
-			}
-			reportInterval = secs
-
-		case "-p=":
-			if _, exists := os.LookupEnv("POLL_INTERVAL"); !exists {
-				continue
-			}
-			secs, err := strconv.Atoi(tail)
-			if err != nil {
-				fmt.Printf("Bad Argument for pollInterval with %s\n", tail)
-				return 3
-			}
-			pollInterval = secs
-		default:
-			fmt.Printf("unknown Argument -  %s\n", a)
-			return 4
-		}
-	}
-	return 0
 }
