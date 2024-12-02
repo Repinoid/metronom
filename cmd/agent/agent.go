@@ -61,16 +61,20 @@ func getMetrix(memStor *MemStorage) error {
 	}
 	return nil
 }
-func postMetric(metricType, metricName, metricValue string) int {
+func postMetric(metricType, metricName, metricValue string) error {
 
 	url := "http://" + host + "/update/" + metricType + "/" + metricName + "/" + metricValue
 	resp, err := http.Post(url, "text/plain", nil)
-	if err != nil {
-		return resp.StatusCode
+	if err == nil {
+		defer resp.Body.Close()
 	}
-	defer resp.Body.Close()
-	return resp.StatusCode
+	return err
+	/*	if err != nil {
+			return resp.StatusCode
+		}
+		return resp.StatusCode*/
 }
+
 func main() {
 	if faa4Agent() != 0 {
 		return
@@ -94,13 +98,13 @@ func run() error {
 		}
 		for name, value := range memStor.gau {
 			status := postMetric("gauge", name, strconv.FormatFloat(float64(value), 'f', 4, 64))
-			if status != http.StatusOK {
+			if status != nil { //http.StatusOK {
 				log.Println(status)
 			}
 		}
 		for name, value := range memStor.count {
 			status := postMetric("counter", name, strconv.FormatInt(int64(value), 10))
-			if status != http.StatusOK {
+			if status != nil { //http.StatusOK {
 				log.Println(status)
 			}
 		}

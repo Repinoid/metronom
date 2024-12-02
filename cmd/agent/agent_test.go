@@ -1,17 +1,46 @@
 package main
 
-/*
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
 func TestPostMetric(t *testing.T) {
-	result1 := postMetric("gauge", "Alloc", "55.55")
-	if result1 != http.StatusOK {
-		t.Errorf("Result was incorrect, got: %d, want: %s.", result1, "http.StatusOK")
+	type want struct {
+		ret error
 	}
-	result2 := postMetric("gaug", "Alloc", "55.55")
-	if result2 != http.StatusBadRequest {
-		t.Errorf("Result was incorrect, got: %d, want: %s.", result1, "http.StatusBadRequest")
+	tests := []struct {
+		name                                string
+		metricType, metricName, metricValue string
+		want                                want // пока не надо
+	}{
+		{
+			name:       "err1",
+			metricType: "gaug", metricName: "Alloc", metricValue: "77.77",
+			want: want{
+				ret: nil,
+			},
+		},
+		{
+			name:       "err2",
+			metricType: "gauge", metricName: "Allo", metricValue: "77.77",
+			want: want{
+				ret: nil,
+			},
+		},
+		{
+			name:       "err3",
+			metricType: "gauge", metricName: "Alloc", metricValue: "77g.77",
+			want: want{
+				ret: nil,
+			},
+		},
 	}
-	result3 := postMetric("gauge", "Alloc", "a55.55")
-	if result3 != http.StatusBadRequest {
-		t.Errorf("Result was incorrect, got: %d, want: %s.", result1, "http.StatusBadRequest")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := postMetric(tt.metricType, tt.metricName, tt.metricValue)
+			assert.Error(t, res)
+		})
 	}
-}*/
+}
