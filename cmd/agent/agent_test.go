@@ -17,7 +17,7 @@ func TestPostMetric(t *testing.T) {
 	}{
 		{
 			name:       "err1",
-			metricType: "gaug", metricName: "Alloc", metricValue: "77.77",
+			metricType: "///", metricName: "Alloc", metricValue: "77.77",
 			want: want{
 				ret: nil,
 			},

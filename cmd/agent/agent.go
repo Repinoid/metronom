@@ -6,18 +6,20 @@ import (
 	"net/http"
 	"runtime"
 	"strconv"
+	"sync"
 	"time"
 )
 
 type gauge float64
 type counter int64
 type MemStorage struct {
-	gau   map[string]gauge
-	count map[string]counter
+	gau    map[string]gauge
+	count  map[string]counter
+	mutter sync.RWMutex
+	//	PollCount int
 }
 
-var memStor *MemStorage
-var PollCount int
+// var memStor *MemStorage
 var host = "localhost:8080"
 var reportInterval = 10
 var pollInterval = 2
@@ -25,7 +27,10 @@ var pollInterval = 2
 func getMetrix(memStor *MemStorage) error {
 	var mS runtime.MemStats
 	runtime.ReadMemStats(&mS)
-	PollCount++
+	memStor.mutter.Lock() // MUTEXed
+	defer memStor.mutter.Unlock()
+
+	//	memStor.PollCount++
 	memStor.gau = map[string]gauge{
 		"Alloc":         gauge(mS.Alloc),
 		"BuckHashSys":   gauge(mS.BuckHashSys),
@@ -54,58 +59,57 @@ func getMetrix(memStor *MemStorage) error {
 		"StackSys":      gauge(mS.StackSys),
 		"Sys":           gauge(mS.Sys),
 		"TotalAlloc":    gauge(mS.TotalAlloc),
-		"RandomValue":   gauge(rand.Float64()),
+		"RandomValue":   gauge(rand.Float64()), // self-defined
 	}
 	memStor.count = map[string]counter{
-		"PollCount": counter(PollCount),
+		"PollCount": counter(0), // self-defined
 	}
 	return nil
 }
 func postMetric(metricType, metricName, metricValue string) error {
-
 	url := "http://" + host + "/update/" + metricType + "/" + metricName + "/" + metricValue
 	resp, err := http.Post(url, "text/plain", nil)
 	if err == nil {
 		defer resp.Body.Close()
 	}
 	return err
-	/*	if err != nil {
-			return resp.StatusCode
-		}
-		return resp.StatusCode*/
 }
 
 func main() {
-	if faa4Agent() != 0 {
+	if err := foa4Agent(); err != nil {
+		log.Println(err, " no success for foa4Agent() ")
 		return
 	}
-
 	if err := run(); err != nil {
 		panic(err)
 	}
 }
 
 func run() error {
-	memStor = new(MemStorage)
-
+	memStor := new(MemStorage)
 	for {
+		cunt := 0
 		for i := 0; i < reportInterval/pollInterval; i++ {
 			err := getMetrix(memStor)
 			if err != nil {
-				log.Println(err)
+				log.Println(err, "getMetrix")
+			} else {
+				cunt++
 			}
 			time.Sleep(time.Duration(pollInterval) * time.Second)
 		}
 		for name, value := range memStor.gau {
-			status := postMetric("gauge", name, strconv.FormatFloat(float64(value), 'f', 4, 64))
-			if status != nil { //http.StatusOK {
-				log.Println(status)
+			valStr := strconv.FormatFloat(float64(value), 'f', 4, 64)
+			err := postMetric("gauge", name, valStr)
+			if err != nil {
+				log.Println(err, "gauge", name, valStr)
 			}
 		}
-		for name, value := range memStor.count {
-			status := postMetric("counter", name, strconv.FormatInt(int64(value), 10))
-			if status != nil { //http.StatusOK {
-				log.Println(status)
+		for name := range memStor.count {
+			valStr := strconv.FormatInt(int64(cunt), 10)
+			err := postMetric("counter", name, valStr)
+			if err != nil {
+				log.Println(err, "counter", name, valStr)
 			}
 		}
 	}

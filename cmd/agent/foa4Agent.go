@@ -2,22 +2,31 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 	"strconv"
 )
 
-func faa4Agent() int {
+func foa4Agent() error {
 	enva, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		host = enva
 	}
 	enva, exists = os.LookupEnv("REPORT_INTERVAL")
 	if exists {
-		reportInterval, _ = strconv.Atoi(enva)
+		var err error
+		reportInterval, err  = strconv.Atoi(enva)
+		if err != nil {
+			log.Fatalf("REPORT_INTERVAL error value %s\t error %v\n", enva, err)
+		}
 	}
 	enva, exists = os.LookupEnv("POLL_INTERVAL")
 	if exists {
-		pollInterval, _ = strconv.Atoi(enva)
+		var err error
+		pollInterval, err = strconv.Atoi(enva)
+		if err != nil {
+			log.Fatalf("POLL_INTERVAL error value %s\t error %v\n", enva, err)
+		}
 	}
 
 	var hostFlag string
@@ -35,5 +44,5 @@ func faa4Agent() int {
 	if _, exists := os.LookupEnv("POLL_INTERVAL"); !exists {
 		pollInterval = *pollIntervalFlag
 	}
-	return 0
+	return nil
 }

@@ -2,24 +2,25 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 )
 
-func faa4server() int {
+func foa4Server() error {
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		host = hoster
-		return 0
+		return nil
 	}
 	var hostFlag string
 	flag.StringVar(&hostFlag, "a", "localhost:8080", "Only -a={host:port} flag is allowed here")
 	flag.Parse()
 
 	if hostFlag == "" {
-		return 1
+		return fmt.Errorf("no host parsed from arg string")
 	}
 
 	host = hostFlag
 
-	return 0
+	return nil
 }
