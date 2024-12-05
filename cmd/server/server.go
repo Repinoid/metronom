@@ -110,7 +110,6 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 		rwr.WriteHeader(http.StatusNotFound)
 		return
 	}
-	rwr.WriteHeader(http.StatusOK)
 	if metricType != "gauge" && metricType != "counter" {
 		rwr.WriteHeader(http.StatusBadRequest)
 		return
@@ -130,4 +129,5 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 		}
 		memStor.addGauge(metricName, gauge(value))
 	}
+	rwr.WriteHeader(http.StatusOK)
 }
