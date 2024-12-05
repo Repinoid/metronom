@@ -5,12 +5,6 @@ import (
 	"strconv"
 )
 
-func newMemStorage() (MemStorage, error) {
-	memStor := new(MemStorage)
-	memStor.gau = make(map[string]gauge)
-	memStor.count = make(map[string]counter)
-	return *memStor, nil
-}
 func (ms *MemStorage) addGauge(name string, value gauge) error {
 	ms.mutter.Lock()
 	defer ms.mutter.Unlock()

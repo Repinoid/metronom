@@ -27,11 +27,9 @@ func main() {
 		return
 	}
 
-	var err error
-	memStor, err = newMemStorage()
-	if err != nil {
-		log.Println(err, "error creating memstorage ")
-		return
+	memStor = MemStorage{
+		gau:   make(map[string]gauge),
+		count: make(map[string]counter),
 	}
 
 	if err := run(); err != nil {
