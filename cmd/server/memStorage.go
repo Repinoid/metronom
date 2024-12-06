@@ -35,6 +35,8 @@ func (ms *MemStorage) addCounter(name string, value counter) error {
 	}
 */
 func (ms *MemStorage) getCounterValue(name string, value *string) error {
+	ms.mutter.RLock() // <---- MUTEX
+	defer ms.mutter.RUnlock()
 	if _, ok := ms.count[name]; ok {
 		*value = strconv.FormatInt(int64(ms.count[name]), 10)
 		return nil
@@ -42,6 +44,8 @@ func (ms *MemStorage) getCounterValue(name string, value *string) error {
 	return fmt.Errorf("no %s key", name)
 }
 func (ms *MemStorage) getGaugeValue(name string, value *string) error {
+	ms.mutter.RLock() // <---- MUTEX
+	defer ms.mutter.RUnlock()
 	if _, ok := ms.gau[name]; ok {
 		*value = strconv.FormatFloat(float64(ms.gau[name]), 'f', -1, 64)
 		return nil

@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -15,9 +15,9 @@ func foa4Agent() error {
 	enva, exists = os.LookupEnv("REPORT_INTERVAL")
 	if exists {
 		var err error
-		reportInterval, err  = strconv.Atoi(enva)
+		reportInterval, err = strconv.Atoi(enva)
 		if err != nil {
-			log.Fatalf("REPORT_INTERVAL error value %s\t error %v\n", enva, err)
+			return fmt.Errorf("REPORT_INTERVAL error value %s\t error %w", enva, err)
 		}
 	}
 	enva, exists = os.LookupEnv("POLL_INTERVAL")
@@ -25,8 +25,9 @@ func foa4Agent() error {
 		var err error
 		pollInterval, err = strconv.Atoi(enva)
 		if err != nil {
-			log.Fatalf("POLL_INTERVAL error value %s\t error %v\n", enva, err)
+			return fmt.Errorf("POLL_INTERVAL error value %s\t error %w", enva, err)
 		}
+		return nil
 	}
 
 	var hostFlag string

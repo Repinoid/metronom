@@ -77,7 +77,7 @@ func postMetric(metricType, metricName, metricValue string) error {
 
 func main() {
 	if err := foa4Agent(); err != nil {
-		log.Println(err, " no success for foa4Agent() ")
+		log.Fatal("INTERVAL error ", err)
 		return
 	}
 	if err := run(); err != nil {
