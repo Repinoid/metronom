@@ -21,19 +21,6 @@ func (ms *MemStorage) addCounter(name string, value counter) error {
 	ms.count[name] = value
 	return nil
 }
-
-/*
-	func (ms *MemStorage) resetPollCount() error {
-		ms.mutter.Lock()
-		defer ms.mutter.Unlock()
-		if _, ok := ms.count["PollCount"]; ok {
-			ms.count["PollCount"] = 0
-		} else {
-			return fmt.Errorf("no PollCount")
-		}
-		return nil
-	}
-*/
 func (ms *MemStorage) getCounterValue(name string, value *string) error {
 	ms.mutter.RLock() // <---- MUTEX
 	defer ms.mutter.RUnlock()

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 type gauge float64
@@ -20,6 +21,7 @@ type MemStorage struct {
 
 var memStor MemStorage
 var host = "localhost:8080"
+var sugar zap.SugaredLogger
 
 func main() {
 	if err := foa4Server(); err != nil {
@@ -40,10 +42,17 @@ func main() {
 func run() error {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", treatMetric).Methods("POST")
-	router.HandleFunc("/value/{metricType}/{metricName}", getMetric).Methods("GET")
-	router.HandleFunc("/", getAllMetrix).Methods("GET")
-	router.HandleFunc("/", badPost).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", WithLogging(treatMetric)).Methods("POST")
+	router.HandleFunc("/value/{metricType}/{metricName}", WithLogging(getMetric)).Methods("GET")
+	router.HandleFunc("/", WithLogging(getAllMetrix)).Methods("GET")
+	router.HandleFunc("/", WithLogging(badPost)).Methods("POST") // if POST with wrong arguments structure
+
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic("cannot initialize zap")
+	}
+	defer logger.Sync()
+	sugar = *logger.Sugar()
 
 	return http.ListenAndServe(host, router)
 }
@@ -106,16 +115,19 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 	metricValue := vars["metricValue"]
 	if metricValue == "" {
 		rwr.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 		return
 	}
 	if metricType != "gauge" && metricType != "counter" {
 		rwr.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
 	if metricType == "counter" {
 		value, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
 			rwr.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 			return
 		}
 		memStor.addCounter(metricName, counter(value))
@@ -123,9 +135,11 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 		value, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
 			rwr.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 			return
 		}
 		memStor.addGauge(metricName, gauge(value))
 	}
-	rwr.WriteHeader(http.StatusOK)
+	//	rwr.WriteHeader(http.StatusOK)
+	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
 }
