@@ -9,7 +9,7 @@ import (
 func TestMemStorage_getCounterValue(t *testing.T) {
 	type args struct {
 		name  string
-		value string
+		value counter
 	}
 	tests := []struct {
 		name  string
@@ -20,7 +20,7 @@ func TestMemStorage_getCounterValue(t *testing.T) {
 			name: "Right case",
 			args: args{
 				name:  "metricName",
-				value: "105",
+				value: 105,
 			},
 			noErr: true,
 		},
@@ -28,7 +28,7 @@ func TestMemStorage_getCounterValue(t *testing.T) {
 			name: "noname",
 			args: args{
 				name:  "noname",
-				value: "105",
+				value: 105,
 			},
 			noErr: false,
 		},
@@ -36,7 +36,7 @@ func TestMemStorage_getCounterValue(t *testing.T) {
 			name: "wrongvalue",
 			args: args{
 				name:  "metricName",
-				value: "78",
+				value: 78,
 			},
 			noErr: false,
 		},
@@ -49,9 +49,9 @@ func TestMemStorage_getCounterValue(t *testing.T) {
 	memStor.addCounter("metricName", counter(55)) // 105 = 50+55
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var str string
-			err := memStor.getCounterValue(tt.args.name, &str)
-			erra := err == nil && tt.args.value == str // corrent both name & value
+			var cunt counter
+			err := memStor.getCounterValue(tt.args.name, &cunt)
+			erra := err == nil && tt.args.value == cunt // corrent both name & value
 			assert.Equal(t, erra, tt.noErr)
 		})
 	}

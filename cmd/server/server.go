@@ -84,30 +84,30 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/plain")
 	vars := mux.Vars(req)
-	val := "badly" // does not matter what initial value, could be "var val string"
 	metricType := vars["metricType"]
 	metricName := vars["metricName"]
-	var err error
-	//	err = nil
 	switch metricType {
 	case "counter":
-		err = memStor.getCounterValue(metricName, &val)
+		var cunt counter
+		if memStor.getCounterValue(metricName, &cunt) != nil {
+			rwr.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(rwr, nil)
+			return
+		}
+		fmt.Fprint(rwr, cunt)
 	case "gauge":
-		err = memStor.getGaugeValue(metricName, &val)
+		var gaaga gauge
+		if memStor.getGaugeValue(metricName, &gaaga) != nil {
+			rwr.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(rwr, nil)
+			return
+		}
+		fmt.Fprint(rwr, gaaga)
 	default:
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(rwr, nil)
 		return
 	}
-	if err != nil {
-		rwr.WriteHeader(http.StatusNotFound)
-		fmt.Fprint(rwr, nil)
-		return
-	} //else {
-	//	rwr.WriteHeader(http.StatusOK)
-	fmt.Fprint(rwr, val)
-	//		log.Printf("BadRequest, No value for %s of %s type", metricName, metricType)
-
 }
 
 func treatMetric(rwr http.ResponseWriter, req *http.Request) {
