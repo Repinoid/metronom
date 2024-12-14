@@ -19,6 +19,13 @@ type MemStorage struct {
 	mutter sync.RWMutex
 }
 
+type Metrics struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+}
+
 var memStor MemStorage
 var host = "localhost:8080"
 var sugar zap.SugaredLogger
@@ -43,7 +50,9 @@ func run() error {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", WithLogging(treatMetric)).Methods("POST")
+	router.HandleFunc("/update/", WithLogging(treatJSONMetric)).Methods("POST")
 	router.HandleFunc("/value/{metricType}/{metricName}", WithLogging(getMetric)).Methods("GET")
+	router.HandleFunc("/value/", WithLogging(getJSONMetric)).Methods("POST")
 	router.HandleFunc("/", WithLogging(getAllMetrix)).Methods("GET")
 	router.HandleFunc("/", WithLogging(badPost)).Methods("POST") // if POST with wrong arguments structure
 
