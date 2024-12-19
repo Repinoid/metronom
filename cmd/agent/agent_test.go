@@ -8,7 +8,7 @@ import (
 
 func TestPostMetric(t *testing.T) {
 	type want struct {
-		ret error
+		ret string
 	}
 	tests := []struct {
 		name                                string
@@ -17,30 +17,30 @@ func TestPostMetric(t *testing.T) {
 	}{
 		{
 			name:       "err1",
-			metricType: "///", metricName: "Alloc", metricValue: "77.77",
+			metricType: "hague", metricName: "Alloc", metricValue: "77.77",
 			want: want{
-				ret: nil,
+				ret: "wrong metric type",
 			},
 		},
 		{
 			name:       "err2",
-			metricType: "gauge", metricName: "Allo", metricValue: "77.77",
+			metricType: "counter", metricName: "Allo", metricValue: "77.77",
 			want: want{
-				ret: nil,
+				ret: "ParseInt",
 			},
 		},
 		{
 			name:       "err3",
 			metricType: "gauge", metricName: "Alloc", metricValue: "77g.77",
 			want: want{
-				ret: nil,
+				ret: "ParseFloat",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res := postMetric(tt.metricType, tt.metricName, tt.metricValue)
-			assert.Error(t, res)
+			assert.ErrorContains(t, res, tt.want.ret)
 		})
 	}
 }

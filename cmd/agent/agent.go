@@ -1,6 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"math/rand/v2"
 	"net/http"
@@ -16,7 +21,12 @@ type MemStorage struct {
 	gau    map[string]gauge
 	count  map[string]counter
 	mutter sync.RWMutex
-	//	PollCount int
+}
+type Metrics struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
 // var memStor *MemStorage
@@ -66,13 +76,105 @@ func getMetrix(memStor *MemStorage) error {
 	}
 	return nil
 }
-func postMetric(metricType, metricName, metricValue string) error {
-	url := "http://" + host + "/update/" + metricType + "/" + metricName + "/" + metricValue
-	resp, err := http.Post(url, "text/plain", nil)
-	if err == nil {
-		defer resp.Body.Close()
+
+func pack2gzip(data2pack []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+	zw.ModTime = time.Now()
+	_, err := zw.Write(data2pack)
+	if err != nil {
+		return nil, fmt.Errorf("gzip.NewWriter.Write %w ", err)
 	}
-	return err
+	if err := zw.Close(); err != nil {
+		return nil, fmt.Errorf("gzip.NewWriter.Close %w ", err)
+	}
+	return buf.Bytes(), nil
+}
+func unpackFromGzip(data2unpack io.Reader) (io.Reader, error) {
+	gzipReader, err := gzip.NewReader(data2unpack)
+	if err != nil {
+		return nil, fmt.Errorf("gzip.NewReader %w ", err)
+	}
+	if err := gzipReader.Close(); err != nil {
+		return nil, fmt.Errorf("zr.Close %w ", err)
+	}
+	return gzipReader, nil
+}
+
+func postByNewRequest(metr Metrics) ([]byte, error) {
+	jsonStrMarshalled, err := json.Marshal(metr)
+	if err != nil {
+		return nil, fmt.Errorf("marshal err %w ", err)
+	}
+	jsonStrPacked, err := pack2gzip(jsonStrMarshalled)
+	if err != nil {
+		return nil, fmt.Errorf("pack2gzip %w ", err)
+	}
+	requerest, err := http.NewRequest("POST", "http://"+host+"/update/", bytes.NewBuffer(jsonStrPacked))
+	if err != nil {
+		return nil, fmt.Errorf("erra http.NewRequest %w ", err)
+	}
+	requerest.Header.Set("Accept-Encoding", "gzip")
+	requerest.Header.Set("Content-Encoding", "gzip")
+
+	client := &http.Client{}
+
+	responsa, err := client.Do(requerest)
+	if err != nil {
+		return nil, fmt.Errorf("client.Do  %w ", err)
+	}
+	defer responsa.Body.Close()
+	var reader io.Reader
+	if responsa.Header.Get(`Content-Encoding`) == `gzip` {
+		reader, err = unpackFromGzip(responsa.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unpackFromGzip %w ", err)
+		}
+	} else {
+		reader = responsa.Body
+	}
+	telo, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("io.ReadAll(reader) %w ", err)
+	}
+	return telo, nil
+
+}
+
+func postMetric(metricType, metricName, metricValue string) error {
+	switch metricType {
+	case "counter":
+		val, err := strconv.ParseInt(metricValue, 10, 64)
+		if err != nil {
+			return fmt.Errorf("strconv.ParseInt(metricValue, 10, 64) %w", err)
+		}
+		metr := Metrics{
+			ID:    metricName,
+			MType: metricType,
+			Delta: &val,
+		}
+		_, err = postByNewRequest(metr)
+		if err != nil {
+			return fmt.Errorf("postByNewRequest counter %w", err)
+		}
+	case "gauge":
+		val, err := strconv.ParseFloat(metricValue, 64)
+		if err != nil {
+			return fmt.Errorf("strconv.ParseFloat(metricValue, 64) %w", err)
+		}
+		metr := Metrics{
+			ID:    metricName,
+			MType: metricType,
+			Value: &val,
+		}
+		_, err = postByNewRequest(metr)
+		if err != nil {
+			return fmt.Errorf("postByNewRequest gauge %w", err)
+		}
+	default:
+		return fmt.Errorf("wrong metric type")
+	}
+	return nil
 }
 
 func main() {

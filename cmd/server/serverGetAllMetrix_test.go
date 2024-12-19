@@ -23,7 +23,7 @@ func TestGAMetrix(t *testing.T) {
 			urla: "/somesymbols",
 			want: want{
 				code:        http.StatusBadRequest,
-				contentType: "text/plain",
+				contentType: "text/html",
 			},
 		},
 		{
@@ -31,7 +31,7 @@ func TestGAMetrix(t *testing.T) {
 			urla: "/",
 			want: want{
 				code:        http.StatusOK,
-				contentType: "text/plain",
+				contentType: "text/html",
 			},
 		},
 	}
