@@ -63,7 +63,7 @@ func run() error {
 	defer logger.Sync()
 	sugar = *logger.Sugar()
 
-	return http.ListenAndServe(host, router)
+	return http.ListenAndServe(host, gzipHandle(router))
 }
 
 func badPost(rwr http.ResponseWriter, req *http.Request) {
