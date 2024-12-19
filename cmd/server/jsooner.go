@@ -61,11 +61,6 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprint(rwr, nil)
 		return
 	}
-	/*	if err != nil {
-		rwr.WriteHeader(http.StatusNotFound)
-		fmt.Fprint(rwr, nil)
-		return
-	}*/
 }
 
 func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {

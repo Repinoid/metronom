@@ -32,7 +32,7 @@ func Test_getMetric(t *testing.T) {
 			want: want{
 				code:        http.StatusOK,
 				response:    `{"status":"StatusOK"}`,
-				contentType: "text/plain",
+				contentType: "text/html",
 			},
 		},
 		{
@@ -45,7 +45,7 @@ func Test_getMetric(t *testing.T) {
 			want: want{
 				code:        http.StatusBadRequest,
 				response:    `{"status":"StatusBadRequest"}`,
-				contentType: "text/plain",
+				contentType: "text/html",
 			},
 		},
 		{
@@ -58,7 +58,7 @@ func Test_getMetric(t *testing.T) {
 			want: want{
 				code:        http.StatusBadRequest,
 				response:    `{"status":"StatusBadRequest"}`,
-				contentType: "text/plain",
+				contentType: "text/html",
 			},
 		},
 		{
@@ -71,7 +71,7 @@ func Test_getMetric(t *testing.T) {
 			want: want{
 				code:        http.StatusNotFound,
 				response:    `{"status":"StatusNotFound"}`,
-				contentType: "text/plain",
+				contentType: "text/html",
 			},
 		},
 	}
