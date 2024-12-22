@@ -116,7 +116,10 @@ func postByNewRequest(metr Metrics) ([]byte, error) {
 	}
 	requerest.Header.Set("Accept-Encoding", "gzip")
 	requerest.Header.Set("Content-Encoding", "gzip")
+<<<<<<< HEAD
 	requerest.Header.Set("Content-Type", "application/json")
+=======
+>>>>>>> 2f3e239640b9d392f64b81867ca4d4ae40c08a36
 
 	client := &http.Client{}
 
@@ -125,7 +128,10 @@ func postByNewRequest(metr Metrics) ([]byte, error) {
 		return nil, fmt.Errorf("client.Do  %w ", err)
 	}
 	defer responsa.Body.Close()
+<<<<<<< HEAD
 	
+=======
+>>>>>>> 2f3e239640b9d392f64b81867ca4d4ae40c08a36
 	var reader io.Reader
 	if responsa.Header.Get(`Content-Encoding`) == `gzip` {
 		reader, err = unpackFromGzip(responsa.Body)
