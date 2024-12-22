@@ -20,10 +20,10 @@ type MemStorage struct {
 }
 
 type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
 	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	ID    string   `json:"id"`              // имя метрики
 }
 
 var memStor MemStorage
@@ -63,23 +63,24 @@ func run() error {
 	defer logger.Sync()
 	sugar = *logger.Sugar()
 
-	return http.ListenAndServe(host, router)
+	//return http.ListenAndServe(host, router)
+	return http.ListenAndServe(host, gzipHandle(router))
 }
 
 func badPost(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
+	rwr.Header().Set("Content-Type", "text/html")
 	rwr.WriteHeader(http.StatusNotFound)
 	fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 }
 
 func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
+	rwr.Header().Set("Content-Type", "text/html")
 	if req.URL.Path != "/" { // if GET with wrong arguments structure
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	rwr.WriteHeader(http.StatusOK)
+	//	rwr.WriteHeader(http.StatusOK)
 	memStor.mutter.RLock() // <---- MUTEX
 	defer memStor.mutter.RUnlock()
 	for nam, val := range memStor.gau {
@@ -91,7 +92,7 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 func getMetric(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
+	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
 	metricType := vars["metricType"]
 	metricName := vars["metricName"]
@@ -120,7 +121,7 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 }
 
 func treatMetric(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
+	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
 	metricType := vars["metricType"]
 	metricName := vars["metricName"]
@@ -155,4 +156,7 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
 }
 
-// metricstest -test.v -test.run="^TestIteration6[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/
+/*
+metricstest -test.v -test.run="^TestIteration8[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/ -agent-binary-path=cmd/agent/agent.exe -server-port=8080
+
+*/

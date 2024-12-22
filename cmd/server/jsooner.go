@@ -1,75 +1,113 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
+
+func pack2gzip(data2pack []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+	zw.ModTime = time.Now()
+	_, err := zw.Write(data2pack)
+	if err != nil {
+		return nil, fmt.Errorf("gzip.NewWriter.Write %w ", err)
+	}
+	if err := zw.Close(); err != nil {
+		return nil, fmt.Errorf("gzip.NewWriter.Close %w ", err)
+	}
+	return buf.Bytes(), nil
+}
+func unpackFromGzip(data2unpack io.Reader) (io.Reader, error) {
+	gzipReader, err := gzip.NewReader(data2unpack)
+	if err != nil {
+		return nil, fmt.Errorf("gzip.NewReader %w ", err)
+	}
+	if err := gzipReader.Close(); err != nil {
+		return nil, fmt.Errorf("zr.Close %w ", err)
+	}
+	return gzipReader, nil
+}
 
 func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
-
+	//req.Header.Set("Content-Type", "application/json")
+	//rwr.WriteHeader(http.StatusBadRequest)
+	//return
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	metra := Metrics{}
+	//	inta := int64(0)
+	//	floata := float64(0)
+	metra := Metrics{} //Delta: &inta, Value: &floata}
 	err = json.Unmarshal([]byte(telo), &metra)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
+		//	fmt.Fprintf(rwr, "%v", telo)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
 	switch metra.MType {
 	case "counter":
-		//err = memStor.getCounterValue(metricName, &val)
 		var cunt counter
 		if memStor.getCounterValue(metra.ID, &cunt) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(rwr, nil)
+			fmt.Fprint(rwr, `{"status":"StatusNotFound"}`)
+			//			json.NewEncoder(rwr).Encode(metra)
 			return
 		}
 		delt := int64(cunt)
 		metra.Delta = &delt
-		resp, err := json.Marshal(metra)
-		if err != nil {
-			http.Error(rwr, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		rwr.Write(resp)
+
+	//	json.NewEncoder(rwr).Encode(metra)
+	//	return
+
+	// resp, err := json.Marshal(metra)
+	// if err != nil {
+	// 	http.Error(rwr, err.Error(), http.StatusInternalServerError)
+	// 	fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
+	// 	return
+	// }
+	// rwr.Write(resp)
 	case "gauge":
-		//		err = memStor.getGaugeValue(metricName, &val)
 		var gaaga gauge
 		if memStor.getGaugeValue(metra.ID, &gaaga) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(rwr, nil)
+			fmt.Fprint(rwr, `{"status":"StatusNotFound"}`)
+			//			break
 			return
 		}
 		flo := float64(gaaga)
 		metra.Value = &flo
-		resp, err := json.Marshal(metra)
-		if err != nil {
-			http.Error(rwr, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		rwr.Write(resp)
+
+	//	json.NewEncoder(rwr).Encode(metra)
+
+	// resp, err := json.Marshal(metra)
+	// if err != nil {
+	// 	http.Error(rwr, err.Error(), http.StatusInternalServerError)
+	// 	fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
+	// 	return
+	// }
+	// rwr.Write(resp)
 	default:
 		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(rwr, nil)
+		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	/*	if err != nil {
-		rwr.WriteHeader(http.StatusNotFound)
-		fmt.Fprint(rwr, nil)
-		return
-	}*/
+	json.NewEncoder(rwr).Encode(metra) // common
 }
 
 func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -106,13 +144,14 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		*metra.Delta = int64(cunt)
+		json.NewEncoder(rwr).Encode(metra)
 
-		resp, err := json.Marshal(metra)
-		if err != nil {
-			http.Error(rwr, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		rwr.Write(resp)
+		// resp, err := json.Marshal(metra)
+		// if err != nil {
+		// 	http.Error(rwr, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		// rwr.Write(resp)
 	case "gauge":
 		if metricValue == nil {
 			rwr.WriteHeader(http.StatusBadRequest)
@@ -128,13 +167,14 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		*metra.Value = float64(gaaga)
+		json.NewEncoder(rwr).Encode(metra)
 
-		resp, err := json.Marshal(metra)
-		if err != nil {
-			http.Error(rwr, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		rwr.Write(resp)
+		// resp, err := json.Marshal(metra)
+		// if err != nil {
+		// 	http.Error(rwr, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		// rwr.Write(resp)
 	default:
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
