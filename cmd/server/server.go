@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 type gauge float64
@@ -18,8 +19,16 @@ type MemStorage struct {
 	mutter sync.RWMutex
 }
 
+type Metrics struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+}
+
 var memStor MemStorage
 var host = "localhost:8080"
+var sugar zap.SugaredLogger
 
 func main() {
 	if err := foa4Server(); err != nil {
@@ -40,22 +49,32 @@ func main() {
 func run() error {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", treatMetric).Methods("POST")
-	router.HandleFunc("/value/{metricType}/{metricName}", getMetric).Methods("GET")
-	router.HandleFunc("/", getAllMetrix).Methods("GET")
-	router.HandleFunc("/", badPost).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", WithLogging(treatMetric)).Methods("POST")
+	router.HandleFunc("/update/", WithLogging(treatJSONMetric)).Methods("POST")
+	router.HandleFunc("/value/{metricType}/{metricName}", WithLogging(getMetric)).Methods("GET")
+	router.HandleFunc("/value/", WithLogging(getJSONMetric)).Methods("POST")
+	router.HandleFunc("/", WithLogging(getAllMetrix)).Methods("GET")
+	router.HandleFunc("/", WithLogging(badPost)).Methods("POST") // if POST with wrong arguments structure
 
-	return http.ListenAndServe(host, router)
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic("cannot initialize zap")
+	}
+	defer logger.Sync()
+	sugar = *logger.Sugar()
+
+	//return http.ListenAndServe(host, router)
+	return http.ListenAndServe(host, gzipHandle(router))
 }
 
 func badPost(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
+	rwr.Header().Set("Content-Type", "text/html")
 	rwr.WriteHeader(http.StatusNotFound)
 	fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 }
 
 func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
+	rwr.Header().Set("Content-Type", "text/html")
 	if req.URL.Path != "/" { // if GET with wrong arguments structure
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -73,59 +92,68 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 func getMetric(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
+	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
-	val := "badly" // does not matter what initial value, could be "var val string"
 	metricType := vars["metricType"]
 	metricName := vars["metricName"]
-	if metricType != "gauge" && metricType != "counter" {
+	switch metricType {
+	case "counter":
+		var cunt counter
+		if memStor.getCounterValue(metricName, &cunt) != nil {
+			rwr.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(rwr, nil)
+			return
+		}
+		fmt.Fprint(rwr, cunt)
+	case "gauge":
+		var gaaga gauge
+		if memStor.getGaugeValue(metricName, &gaaga) != nil {
+			rwr.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(rwr, nil)
+			return
+		}
+		fmt.Fprint(rwr, gaaga)
+	default:
 		rwr.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(rwr, nil)
 		return
-	}
-	var err error
-	if metricType == "gauge" {
-		err = memStor.getGaugeValue(metricName, &val)
-	} else { //if metricType == "counter" {
-		err = memStor.getCounterValue(metricName, &val)
-	}
-	if err == nil {
-		rwr.WriteHeader(http.StatusOK)
-		fmt.Fprint(rwr, val)
-	} else {
-		rwr.WriteHeader(http.StatusNotFound)
-		log.Printf("BadRequest, No value for %s of %s type", metricName, metricType)
 	}
 }
 
 func treatMetric(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
+	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
-	rwr.Header().Set("Content-Type", "text/plain")
 	metricType := vars["metricType"]
 	metricName := vars["metricName"]
 	metricValue := vars["metricValue"]
 	if metricValue == "" {
 		rwr.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 		return
 	}
-	if metricType != "gauge" && metricType != "counter" {
-		rwr.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if metricType == "counter" {
+	switch metricType {
+	case "counter":
 		value, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
 			rwr.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 			return
 		}
 		memStor.addCounter(metricName, counter(value))
-	} else { //	if metricType == "gauge" {
+	case "gauge":
 		value, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
 			rwr.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 			return
 		}
 		memStor.addGauge(metricName, gauge(value))
+	default:
+		rwr.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
+		return
 	}
-	rwr.WriteHeader(http.StatusOK)
+	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
 }
+
+// metricstest -test.v -test.run="^TestIteration6[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/
