@@ -63,10 +63,7 @@ func run() error {
 	defer logger.Sync()
 	sugar = *logger.Sugar()
 
-<<<<<<< HEAD
 	//return http.ListenAndServe(host, router)
-=======
->>>>>>> 2f3e239640b9d392f64b81867ca4d4ae40c08a36
 	return http.ListenAndServe(host, gzipHandle(router))
 }
 
@@ -159,11 +156,7 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
 }
 
-<<<<<<< HEAD
 /*
 metricstest -test.v -test.run="^TestIteration8[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/ -agent-binary-path=cmd/agent/agent.exe -server-port=8080
 
 */
-=======
-// metricstest -test.v -test.run="^TestIteration8[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/ -agent-binary-path=cmd/agent/agent.exe -server-port=8080
->>>>>>> 2f3e239640b9d392f64b81867ca4d4ae40c08a36

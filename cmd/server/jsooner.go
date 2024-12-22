@@ -102,10 +102,7 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-<<<<<<< HEAD
 	json.NewEncoder(rwr).Encode(metra) // common
-=======
->>>>>>> 2f3e239640b9d392f64b81867ca4d4ae40c08a36
 }
 
 func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {

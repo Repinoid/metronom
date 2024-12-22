@@ -61,10 +61,6 @@ type gzipWriter struct {
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {
-<<<<<<< HEAD
-=======
-	// w.Writer будет отвечать за gzip-сжатие, поэтому пишем в него
->>>>>>> 2f3e239640b9d392f64b81867ca4d4ae40c08a36
 	return w.Writer.Write(b)
 }
 
@@ -72,7 +68,6 @@ func gzipHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(respon http.ResponseWriter, claim *http.Request) {
 		rwr := respon
 		req := claim
-<<<<<<< HEAD
 		isTypeOK := strings.Contains(claim.Header.Get("Content-Type"), "application/json") ||
 			strings.Contains(claim.Header.Get("Content-Type"), "text/html") ||
 			strings.Contains(claim.Header.Get("Accept"), "application/json") ||
@@ -101,24 +96,6 @@ func gzipHandle(next http.Handler) http.Handler {
 			//			respon.Header().Set("Content-Encoding", "gzip") //
 			//			req.Header.Set("Content-Encoding", "gzip")      // без этого в тестах -
 
-=======
-		if strings.Contains(claim.Header.Get("Accept-Encoding"), "gzip") &&
-			(strings.Contains(claim.Header.Get("Content-Type"), "application/json") ||
-				strings.Contains(claim.Header.Get("Content-Type"), "text/html")) {
-			respon.Header().Set("Content-Encoding", "gzip")        //
-			req.Header.Set("Content-Encoding", "gzip")             //
-			gz, err := gzip.NewWriterLevel(respon, gzip.BestSpeed) // compressing
-			if err != nil {
-				io.WriteString(respon, err.Error())
-				return
-			}
-			defer gz.Close()
-			rwr = gzipWriter{ResponseWriter: respon, Writer: gz}
-		}
-		if strings.Contains(claim.Header.Get("Content-Encoding"), "gzip") {
-			rwr.Header().Set("Content-Encoding", "")
-			req.Header.Set("Content-Encoding", "")
->>>>>>> 2f3e239640b9d392f64b81867ca4d4ae40c08a36
 			gzipReader, err := gzip.NewReader(claim.Body) // decompressing
 			if err != nil {
 				io.WriteString(respon, err.Error())
@@ -134,12 +111,9 @@ func gzipHandle(next http.Handler) http.Handler {
 		next.ServeHTTP(rwr, req)
 	})
 }
-<<<<<<< HEAD
 
 /*
 curl localhost:8087/update/ -H "Content-Type":"application/json" -d "{\"type\":\"gauge\",\"id\":\"nam\",\"value\":77}"
 
 
 */
-=======
->>>>>>> 2f3e239640b9d392f64b81867ca4d4ae40c08a36
