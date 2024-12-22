@@ -20,10 +20,10 @@ type MemStorage struct {
 }
 
 type Metrics struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
 	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	ID    string   `json:"id"`              // имя метрики
 }
 
 var memStor MemStorage
@@ -80,7 +80,7 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	//	rwr.WriteHeader(http.StatusOK)
+	rwr.WriteHeader(http.StatusOK)
 	memStor.mutter.RLock() // <---- MUTEX
 	defer memStor.mutter.RUnlock()
 	for nam, val := range memStor.gau {
@@ -156,7 +156,4 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
 }
 
-/*
-metricstest -test.v -test.run="^TestIteration8[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/ -agent-binary-path=cmd/agent/agent.exe -server-port=8080
-
-*/
+// metricstest -test.v -test.run="^TestIteration6[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/

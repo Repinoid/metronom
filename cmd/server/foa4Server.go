@@ -13,7 +13,7 @@ func foa4Server() error {
 		return nil
 	}
 	var hostFlag string
-	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
+	flag.StringVar(&hostFlag, "a", "localhost:8080", "Only -a={host:port} flag is allowed here")
 	flag.Parse()
 
 	if hostFlag == "" {

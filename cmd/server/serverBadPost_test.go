@@ -27,7 +27,7 @@ func Test_badPost(t *testing.T) {
 			want: want{
 				code:        http.StatusNotFound,
 				response:    `{"status":"StatusNotFound"}`,
-				contentType: "text/html",
+				contentType: "text/plain",
 			},
 		},
 	}
