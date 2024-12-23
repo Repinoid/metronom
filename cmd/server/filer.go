@@ -10,7 +10,7 @@ import (
 
 type MStorJSON struct {
 	Gau   map[string]gauge
-	Count map[string]counter // `json:"count"`
+	Count map[string]counter 
 }
 
 type Metrica struct {
@@ -73,22 +73,4 @@ func (memorial *MemStorage) LoadMS(fnam string) error {
 		return fmt.Errorf(" Memstorage UnMarshal error %v", err)
 	}
 	return nil
-}
-
-func main5() {
-
-	g := map[string]gauge{"gs1": gauge(99.77), "gs2": gauge(88.88)}
-	c := map[string]counter{"cs1": counter(44), "cs2": counter(88)}
-	memStor = MemStorage{gau: g, count: c}
-	//memStor = MemStorage{}
-
-	//	err := memStor.LoadMS(fnam)
-	//	fmt.Println(err)
-
-	// ma, _ := memStor.MarshalMS()
-	// se := MemStorage{}
-	// se.UnmarshalMS(ma)
-
-	fmt.Printf(" %v %v", memStor.count, memStor.gau)
-
 }

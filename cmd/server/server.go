@@ -57,11 +57,11 @@ func main() {
 		count: make(map[string]counter),
 	}
 
-	if RESTORE {
-		_ = memStor.LoadMS(FILE_STORAGE_PATH)
+	if reStore {
+		_ = memStor.LoadMS(fileStorePath)
 	}
 
-	go saver(&memStor, FILE_STORAGE_PATH)
+	go saver(&memStor, fileStorePath)
 
 	if err := run(); err != nil {
 		panic(err)
