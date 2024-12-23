@@ -74,16 +74,8 @@ func gzipHandle(next http.Handler) http.Handler {
 			strings.Contains(claim.Header.Get("Accept"), "text/html")
 
 		if strings.Contains(claim.Header.Get("Accept-Encoding"), "gzip") && isTypeOK {
-			//			(strings.Contains(claim.Header.Get("Content-Type"), "application/json") ||
-			//				strings.Contains(claim.Header.Get("Content-Type"), "text/html"))
-			//				{
 			respon.Header().Set("Content-Encoding", "gzip") //
-
-			//			req.Header.Set("Content-Encoding", "gzip")                      // без этого в тестах -
-			//			req.Header.Set("Content-Type", "application/octet-stream")      // без этого в тестах -
-			//respon.Header().Set("Content-Type", "application/octet-stream") // без этого в тестах -
-
-			gz := gzip.NewWriter(respon) // compressing
+			gz := gzip.NewWriter(respon)                    // compressing
 			defer gz.Close()
 			rwr = gzipWriter{ResponseWriter: respon, Writer: gz}
 			next.ServeHTTP(rwr, req)
@@ -92,10 +84,6 @@ func gzipHandle(next http.Handler) http.Handler {
 		if strings.Contains(claim.Header.Get("Content-Encoding"), "gzip") {
 			respon.Header().Set("Content-Type", "application/json") // без этого в тестах -
 			req.Header.Del("Content-Encoding")
-
-			//			respon.Header().Set("Content-Encoding", "gzip") //
-			//			req.Header.Set("Content-Encoding", "gzip")      // без этого в тестах -
-
 			gzipReader, err := gzip.NewReader(claim.Body) // decompressing
 			if err != nil {
 				io.WriteString(respon, err.Error())
@@ -114,6 +102,4 @@ func gzipHandle(next http.Handler) http.Handler {
 
 /*
 curl localhost:8087/update/ -H "Content-Type":"application/json" -d "{\"type\":\"gauge\",\"id\":\"nam\",\"value\":77}"
-
-
 */
