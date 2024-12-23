@@ -42,7 +42,7 @@ func foa4Server() error {
 	var hostFlag string
 	var fileStoreFlag string
 
-	flag.StringVar(&hostFlag, "a", "localhost:8080", "Only -a={host:port} flag is allowed here")
+	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", fileStorePath, "Only -a={host:port} flag is allowed here")
 	storeIntervalFlag := flag.Int("i", storeInterval, "storeInterval")
 	restoreFlag := flag.Bool("r", reStore, "restore")

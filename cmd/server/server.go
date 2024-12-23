@@ -87,6 +87,8 @@ func run() error {
 	sugar = *logger.Sugar()
 
 	//return http.ListenAndServe(host, router)
+	log.Printf("host %v ", host)
+
 	return http.ListenAndServe(host, gzipHandle(router))
 }
 

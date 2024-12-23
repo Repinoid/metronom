@@ -1,0 +1,2 @@
+{"Gau":{"Alloc":959752,"BuckHashSys":5457,"Frees":152,"GCCPUFraction":0,"GCSys":1734784,"GetSet74":238872.46561570108,"HeapAlloc":959752,"HeapIdle":1843200,"HeapInuse":1859584,"HeapObjects":6309,"HeapReleased":1810432,"HeapSys":3702784,"LastGC":0,"Lookups":0,"MCacheInuse":4672,"MCacheSys":16352,"MSpanInuse":54880,"MSpanSys":65280,"Mallocs":6461,"NextGC":4194304,"NumForcedGC":0,"NumGC":0,"OtherSys":1082191,"PauseTotalNs":0,"RandomValue":0.5374,"StackInuse":491520,"StackSys":491520,"Sys":7098368,"TotalAlloc":959752},"Count":{"GetSet102":1139383243,"PollCount":10}}
+

@@ -20,8 +20,6 @@ type Metrica struct {
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
-//var fnam = "ms.txt"
-
 func (memorial *MemStorage) MarshalMS() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	memorial.mutter.RLock()
