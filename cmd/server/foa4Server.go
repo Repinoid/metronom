@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
@@ -22,7 +23,7 @@ func foa4Server() error {
 		var err error
 		storeInterval, err = strconv.Atoi(enva)
 		if err != nil {
-			return fmt.Errorf("STORE_INTERVAL error value %s\t error %w", enva, err)
+			log.Printf("STORE_INTERVAL error value %s\t error %v", enva, err)
 		}
 	}
 	enva, exists = os.LookupEnv("FILE_STORAGE_PATH")
@@ -34,9 +35,9 @@ func foa4Server() error {
 		var err error
 		reStore, err = strconv.ParseBool(enva)
 		if err != nil {
-			return fmt.Errorf("RESTORE error value %s\t error %w", enva, err)
+			log.Printf("RESTORE error value %s\t error %v", enva, err)
 		}
-		return nil
+		//	return nil
 	}
 
 	var hostFlag string
