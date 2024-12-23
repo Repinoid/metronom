@@ -10,7 +10,7 @@ import (
 
 type MStorJSON struct {
 	Gau   map[string]gauge
-	Count map[string]counter 
+	Count map[string]counter
 }
 
 type Metrica struct {
@@ -33,11 +33,11 @@ func (memorial *MemStorage) MarshalMS() ([]byte, error) {
 	return append(buf.Bytes(), '\n'), err
 }
 func (memorial *MemStorage) UnmarshalMS(data []byte) error {
-	ms := MStorJSON{}
+	memor := MStorJSON{}
 	memorial.mutter.Lock()
-	err := json.NewDecoder(bytes.NewBuffer(data)).Decode(&ms)
-	memorial.gau = ms.Gau
-	memorial.count = ms.Count
+	err := json.NewDecoder(bytes.NewBuffer(data)).Decode(&memor)
+	memorial.gau = memor.Gau
+	memorial.count = memor.Count
 	memorial.mutter.Unlock()
 	return err
 }

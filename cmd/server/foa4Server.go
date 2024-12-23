@@ -15,7 +15,7 @@ func foa4Server() error {
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		host = hoster
-		return nil
+		//		return nil
 	}
 	enva, exists := os.LookupEnv("STORE_INTERVAL")
 	if exists {
