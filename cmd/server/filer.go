@@ -20,6 +20,16 @@ type Metrica struct {
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
+func (memorial *MemStorage) UnmarshalMS(data []byte) error {
+	memor := MStorJSON{}
+	buf := bytes.NewBuffer(data)
+	memorial.mutter.Lock()
+	err := json.NewDecoder(buf).Decode(&memor)
+	memorial.gau = memor.Gau
+	memorial.count = memor.Count
+	memorial.mutter.Unlock()
+	return err
+}
 func (memorial *MemStorage) MarshalMS() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	memorial.mutter.RLock()
@@ -29,31 +39,6 @@ func (memorial *MemStorage) MarshalMS() ([]byte, error) {
 	})
 	memorial.mutter.RUnlock()
 	return append(buf.Bytes(), '\n'), err
-}
-func (memorial *MemStorage) UnmarshalMS(data []byte) error {
-	memor := MStorJSON{}
-	memorial.mutter.Lock()
-	err := json.NewDecoder(bytes.NewBuffer(data)).Decode(&memor)
-	memorial.gau = memor.Gau
-	memorial.count = memor.Count
-	memorial.mutter.Unlock()
-	return err
-}
-
-func (memorial *MemStorage) SaveMS(fnam string) error {
-	phil, err := os.OpenFile(fnam, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		return fmt.Errorf("file %s Open error %v", fnam, err)
-	}
-	march, err := memorial.MarshalMS()
-	if err != nil {
-		return fmt.Errorf(" Memstorage Marshal error %v", err)
-	}
-	_, err = phil.Write(march)
-	if err != nil {
-		return fmt.Errorf("file %s Write error %v", fnam, err)
-	}
-	return nil
 }
 
 func (memorial *MemStorage) LoadMS(fnam string) error {
@@ -69,6 +54,21 @@ func (memorial *MemStorage) LoadMS(fnam string) error {
 	err = memorial.UnmarshalMS(data)
 	if err != nil {
 		return fmt.Errorf(" Memstorage UnMarshal error %v", err)
+	}
+	return nil
+}
+func (memorial *MemStorage) SaveMS(fnam string) error {
+	phil, err := os.OpenFile(fnam, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		return fmt.Errorf("file %s Open error %v", fnam, err)
+	}
+	march, err := memorial.MarshalMS()
+	if err != nil {
+		return fmt.Errorf(" Memstorage Marshal error %v", err)
+	}
+	_, err = phil.Write(march)
+	if err != nil {
+		return fmt.Errorf("file %s Write error %v", fnam, err)
 	}
 	return nil
 }
