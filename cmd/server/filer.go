@@ -56,7 +56,7 @@ func (memorial *MemStorage) SaveMS(fnam string) error {
 	return nil
 }
 
-func (ms *MemStorage) LoadMS(fnam string) error {
+func (memorial *MemStorage) LoadMS(fnam string) error {
 	phil, err := os.OpenFile(fnam, os.O_RDONLY, 0666)
 	if err != nil {
 		return fmt.Errorf("file %s Open error %v", fnam, err)
@@ -66,7 +66,7 @@ func (ms *MemStorage) LoadMS(fnam string) error {
 	if err != nil {
 		return fmt.Errorf("file %s Read error %v", fnam, err)
 	}
-	err = ms.UnmarshalMS(data)
+	err = memorial.UnmarshalMS(data)
 	if err != nil {
 		return fmt.Errorf(" Memstorage UnMarshal error %v", err)
 	}
