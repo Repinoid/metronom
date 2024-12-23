@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand/v2"
 	"net/http"
@@ -16,7 +19,12 @@ type MemStorage struct {
 	gau    map[string]gauge
 	count  map[string]counter
 	mutter sync.RWMutex
-	//	PollCount int
+}
+type Metrics struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
 // var memStor *MemStorage
@@ -67,12 +75,38 @@ func getMetrix(memStor *MemStorage) error {
 	return nil
 }
 func postMetric(metricType, metricName, metricValue string) error {
-	url := "http://" + host + "/update/" + metricType + "/" + metricName + "/" + metricValue
-	resp, err := http.Post(url, "text/plain", nil)
-	if err == nil {
+	var metr Metrics
+	switch metricType {
+	case "counter":
+		val, _ := strconv.ParseInt(metricValue, 10, 64)
+		metr = Metrics{
+			ID:    metricName,
+			MType: metricType,
+			Delta: &val,
+		}
+		march, _ := json.Marshal(metr)
+		resp, err := http.Post("http://"+host+"/update/", "application/json", bytes.NewBuffer(march))
+		if err != nil {
+			return err
+		}
 		defer resp.Body.Close()
+	case "gauge":
+		val, _ := strconv.ParseFloat(metricValue, 64)
+		metr = Metrics{
+			ID:    metricName,
+			MType: metricType,
+			Value: &val,
+		}
+		march, _ := json.Marshal(metr)
+		resp, err := http.Post("http://"+host+"/update/", "application/json", bytes.NewBuffer(march))
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+	default:
+		return fmt.Errorf("wrong metric type")
 	}
-	return err
+	return nil
 }
 
 func main() {
