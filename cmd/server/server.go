@@ -38,7 +38,7 @@ var sugar zap.SugaredLogger
 func saver(memStor *MemStorage, fnam string) error {
 
 	for {
-		time.Sleep(time.Duration(1) * time.Second)
+		time.Sleep(time.Duration(storeInterval) * time.Second)
 		err := memStor.SaveMS(fnam)
 		if err != nil {
 			return fmt.Errorf("save err %v", err)
@@ -61,7 +61,9 @@ func main() {
 		_ = memStor.LoadMS(fileStorePath)
 	}
 
-	go saver(&memStor, fileStorePath)
+	if storeInterval > 0 {
+		go saver(&memStor, fileStorePath)
+	}
 
 	if err := run(); err != nil {
 		panic(err)
@@ -79,6 +81,9 @@ func run() error {
 	router.HandleFunc("/", WithLogging(getAllMetrix)).Methods("GET")
 	router.HandleFunc("/", WithLogging(badPost)).Methods("POST") // if POST with wrong arguments structure
 
+	router.Use(gzipHandleEncoder)
+	router.Use(gzipHandleDecoder)
+
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic("cannot initialize zap")
@@ -89,7 +94,7 @@ func run() error {
 	//return http.ListenAndServe(host, router)
 	log.Printf("host %v ", host)
 
-	return http.ListenAndServe(host, gzipHandle(router))
+	return http.ListenAndServe(host, router)
 }
 
 func badPost(rwr http.ResponseWriter, req *http.Request) {
@@ -179,5 +184,8 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
-}
 
+	if storeInterval == 0 {
+		_ = memStor.SaveMS(fileStorePath)
+	}
+}
