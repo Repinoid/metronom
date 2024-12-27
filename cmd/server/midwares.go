@@ -64,38 +64,46 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func gzipHandle(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(respon http.ResponseWriter, claim *http.Request) {
-		rwr := respon
-		req := claim
-		isTypeOK := strings.Contains(claim.Header.Get("Content-Type"), "application/json") ||
-			strings.Contains(claim.Header.Get("Content-Type"), "text/html") ||
-			strings.Contains(claim.Header.Get("Accept"), "application/json") ||
-			strings.Contains(claim.Header.Get("Accept"), "text/html")
+func gzipHandleEncoder(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
+		isTypeOK := strings.Contains(req.Header.Get("Content-Type"), "application/json") ||
+			strings.Contains(req.Header.Get("Content-Type"), "text/html") ||
+			strings.Contains(req.Header.Get("Accept"), "application/json") ||
+			strings.Contains(req.Header.Get("Accept"), "text/html")
 
-		if strings.Contains(claim.Header.Get("Accept-Encoding"), "gzip") && isTypeOK {
-			respon.Header().Set("Content-Encoding", "gzip") //
-			gz := gzip.NewWriter(respon)                    // compressing
+		if strings.Contains(req.Header.Get("Accept-Encoding"), "gzip") && isTypeOK {
+			rwr.Header().Set("Content-Encoding", "gzip") //
+			gz := gzip.NewWriter(rwr)                    // compressing
 			defer gz.Close()
-			rwr = gzipWriter{ResponseWriter: respon, Writer: gz}
+			rwr = gzipWriter{ResponseWriter: rwr, Writer: gz}
 			next.ServeHTTP(rwr, req)
 			return
 		}
-		if strings.Contains(claim.Header.Get("Content-Encoding"), "gzip") {
-			respon.Header().Set("Content-Type", "application/json") // без этого в тестах -
-			req.Header.Del("Content-Encoding")
-			gzipReader, err := gzip.NewReader(claim.Body) // decompressing
+		next.ServeHTTP(rwr, req)
+	})
+}
+func gzipHandleDecoder(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
+		isTypeOK := strings.Contains(req.Header.Get("Content-Type"), "application/json") ||
+			strings.Contains(req.Header.Get("Content-Type"), "text/html") ||
+			strings.Contains(req.Header.Get("Accept"), "application/json") ||
+			strings.Contains(req.Header.Get("Accept"), "text/html")
+
+		if strings.Contains(req.Header.Get("Content-Encoding"), "gzip") && isTypeOK {
+			//			rwr.Header().Set("Content-Type", "application/json") // без этого в тестах -
+			gzipReader, err := gzip.NewReader(req.Body) // decompressing
 			if err != nil {
-				io.WriteString(respon, err.Error())
+				io.WriteString(rwr, err.Error())
 				return
 			}
-			newReq, err := http.NewRequest(claim.Method, claim.URL.String(), gzipReader)
+			newReq, err := http.NewRequest(req.Method, req.URL.String(), gzipReader)
 			if err != nil {
-				io.WriteString(respon, err.Error())
+				io.WriteString(rwr, err.Error())
 				return
 			}
 			req = newReq
 		}
+
 		next.ServeHTTP(rwr, req)
 	})
 }
