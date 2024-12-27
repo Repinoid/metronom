@@ -184,5 +184,8 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
-	saver(&memStor, fileStorePath)
+
+	if storeInterval == 0 {
+		_ = memStor.SaveMS(fileStorePath)
+	}
 }

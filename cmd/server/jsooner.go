@@ -117,5 +117,7 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	saver(&memStor, fileStorePath)
+	if storeInterval == 0 {
+		_ = memStor.SaveMS(fileStorePath)
+	}
 }
