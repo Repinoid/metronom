@@ -9,24 +9,25 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func pack2gzip(data2pack []byte) ([]byte, error) {
-	var buf bytes.Buffer
-	zw := gzip.NewWriter(&buf)
-	zw.ModTime = time.Now()
-	_, err := zw.Write(data2pack)
-	if err != nil {
-		return nil, fmt.Errorf("gzip.NewWriter.Write %w ", err)
-	}
-	if err := zw.Close(); err != nil {
-		return nil, fmt.Errorf("gzip.NewWriter.Close %w ", err)
-	}
-	return buf.Bytes(), nil
-}
+type func4test func(http.ResponseWriter, *http.Request)
+
+//	func pack2gzip(data2pack []byte) ([]byte, error) {
+//		var buf bytes.Buffer
+//		zw := gzip.NewWriter(&buf)
+//		zw.ModTime = time.Now()
+//		_, err := zw.Write(data2pack)
+//		if err != nil {
+//			return nil, fmt.Errorf("gzip.NewWriter.Write %w ", err)
+//		}
+//		if err := zw.Close(); err != nil {
+//			return nil, fmt.Errorf("gzip.NewWriter.Close %w ", err)
+//		}
+//		return buf.Bytes(), nil
+//	}
 func unpackFromGzip(data2unpack io.Reader) (io.Reader, error) {
 	gzipReader, err := gzip.NewReader(data2unpack)
 	if err != nil {
@@ -37,8 +38,6 @@ func unpackFromGzip(data2unpack io.Reader) (io.Reader, error) {
 	}
 	return gzipReader, nil
 }
-
-type func4test func(http.ResponseWriter, *http.Request)
 
 func Test_gzipHandlePLUG(t *testing.T) {
 	type want struct {
