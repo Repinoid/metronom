@@ -84,12 +84,6 @@ func postMetric(metricType, metricName, metricValue string) error {
 			MType: metricType,
 			Delta: &val,
 		}
-		march, _ := json.Marshal(metr)
-		resp, err := http.Post("http://"+host+"/update/", "application/json", bytes.NewBuffer(march))
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
 	case "gauge":
 		val, _ := strconv.ParseFloat(metricValue, 64)
 		metr = Metrics{
@@ -97,15 +91,16 @@ func postMetric(metricType, metricName, metricValue string) error {
 			MType: metricType,
 			Value: &val,
 		}
-		march, _ := json.Marshal(metr)
-		resp, err := http.Post("http://"+host+"/update/", "application/json", bytes.NewBuffer(march))
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
 	default:
 		return fmt.Errorf("wrong metric type")
 	}
+	march, _ := json.Marshal(metr)
+	resp, err := http.Post("http://"+host+"/update/", "application/json", bytes.NewBuffer(march))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
 	return nil
 }
 
