@@ -18,8 +18,8 @@ func Test_getMetric(t *testing.T) {
 		contentType string
 	}
 	tests := []struct {
-		want want
 		name string
+		want want
 		metr map[string]string
 	}{
 		{

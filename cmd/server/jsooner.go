@@ -62,7 +62,13 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	metra := Metrics{}
-	json.Unmarshal([]byte(telo), &metra)
+	err = json.Unmarshal([]byte(telo), &metra)
+	if err != nil {
+		rwr.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
+		return
+	}
+
 	metricType := metra.MType
 	metricName := metra.ID
 	metricValue := metra.Value
@@ -111,4 +117,5 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
+	saver(&memStor, fileStorePath)
 }
