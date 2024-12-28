@@ -100,7 +100,10 @@ func postMetric(metricType, metricName, metricValue string) error {
 	default:
 		return fmt.Errorf("wrong metric type")
 	}
-	march, _ := json.Marshal(metr)
+	march, err := json.Marshal(metr)
+	if err != nil {
+		return fmt.Errorf("could not marshal metr %w", err)
+	}
 	resp, err := http.Post("http://"+host+"/update/", "application/json", bytes.NewBuffer(march))
 	if err != nil {
 		return fmt.Errorf("could not post %w", err)
