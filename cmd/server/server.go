@@ -145,6 +145,7 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprint(rwr, nil)
 		return
 	}
+	rwr.WriteHeader(http.StatusOK)
 }
 
 func treatMetric(rwr http.ResponseWriter, req *http.Request) {
@@ -181,6 +182,7 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
+	rwr.WriteHeader(http.StatusOK)
 
 	if storeInterval == 0 {
 		_ = memStor.SaveMS(fileStorePath)
