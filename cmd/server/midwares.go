@@ -76,21 +76,14 @@ func gzipHandleEncoder(next http.Handler) http.Handler {
 			gz := gzip.NewWriter(rwr)                    // compressing
 			defer gz.Close()
 			rwr = gzipWriter{ResponseWriter: rwr, Writer: gz}
-			//		next.ServeHTTP(rwr, req)
-			//		return
 		}
 		next.ServeHTTP(rwr, req)
 	})
 }
 func gzipHandleDecoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
-		// isTypeOK := strings.Contains(req.Header.Get("Content-Type"), "application/json") ||
-		// 	strings.Contains(req.Header.Get("Content-Type"), "text/html") ||
-		// 	strings.Contains(req.Header.Get("Accept"), "application/json") ||
-		// 	strings.Contains(req.Header.Get("Accept"), "text/html")
 
-		if strings.Contains(req.Header.Get("Content-Encoding"), "gzip") /* && isTypeOK */ {
-			//			rwr.Header().Set("Content-Type", "application/json") // без этого в тестах -
+		if strings.Contains(req.Header.Get("Content-Encoding"), "gzip") {
 			gzipReader, err := gzip.NewReader(req.Body) // decompressing
 			if err != nil {
 				io.WriteString(rwr, err.Error())
