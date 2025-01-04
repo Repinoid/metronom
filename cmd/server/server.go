@@ -111,7 +111,6 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	rwr.WriteHeader(http.StatusOK)
 	memStor.mutter.RLock() // <---- MUTEX
 	defer memStor.mutter.RUnlock()
 	for nam, val := range memStor.gau {
@@ -121,6 +120,7 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	for nam, val := range memStor.count {
 		fmt.Fprintf(rwr, "Counter Metric name %20s\t\tvalue\t%d\n", nam, val)
 	}
+	rwr.WriteHeader(http.StatusOK)
 }
 func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
