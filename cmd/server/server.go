@@ -2,6 +2,15 @@
 metricstest -test.v -test.run="^TestIteration8[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/  -agent-binary-path=cmd/agent/agent.exe -server-port=localhost:8080
 
 metricstest -test.v -test.run="^TestIteration10[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/ -agent-binary-path=cmd/agent/agent.exe -server-port=localhost:8080 -file-storage-path=goshran.txt -database-dsn=postgres://postgres:passwordas@forgo.c7wegmiakpkw.us-west-1.rds.amazonaws.com:5432/postgres
+
+metricstest -test.v -test.run="^TestIteration1[AB]*$" -binary-path=cmd/server/server.exe ^
+-source-path=cmd/server/ ^
+-agent-binary-path=cmd/agent/agent.exe -server-port=localhost:8080 ^
+-file-storage-path=goshran.txt ^
+-database-dsn=postgres://postgres:passwordas@forgo.c7wegmiakpkw.us-west-1.rds.amazonaws.com:5432/postgres
+
+
+
 */
 
 package main
