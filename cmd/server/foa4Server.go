@@ -65,5 +65,5 @@ func foa4Server() error {
 	if _, exists := os.LookupEnv("RESTORE"); !exists {
 		reStore = *restoreFlag
 	}
-	return nil
+	return nil 
 }
