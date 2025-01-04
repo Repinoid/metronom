@@ -11,6 +11,7 @@ import (
 var storeInterval = 300
 var fileStorePath = "./goshran.txt"
 var reStore = true
+var dbEndPoint = ""
 
 func foa4Server() error {
 	hoster, exists := os.LookupEnv("ADDRESS")
@@ -65,5 +66,5 @@ func foa4Server() error {
 	if _, exists := os.LookupEnv("RESTORE"); !exists {
 		reStore = *restoreFlag
 	}
-	return nil 
+	return nil
 }
