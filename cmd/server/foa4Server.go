@@ -31,6 +31,10 @@ func foa4Server() error {
 	if exists {
 		fileStorePath = enva
 	}
+	enva, exists = os.LookupEnv("DATABASE_DSN")
+	if exists {
+		dbEndPoint = enva
+	}
 	enva, exists = os.LookupEnv("RESTORE")
 	if exists {
 		var err error
@@ -43,7 +47,9 @@ func foa4Server() error {
 
 	var hostFlag string
 	var fileStoreFlag string
+	var dbFlag string
 
+	flag.StringVar(&dbFlag, "d", dbEndPoint, "Data Base endpoint")
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", fileStorePath, "Only -a={host:port} flag is allowed here")
 	storeIntervalFlag := flag.Int("i", storeInterval, "storeInterval")
