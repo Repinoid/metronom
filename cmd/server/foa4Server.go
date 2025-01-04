@@ -72,5 +72,11 @@ func foa4Server() error {
 	if _, exists := os.LookupEnv("RESTORE"); !exists {
 		reStore = *restoreFlag
 	}
+	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
+		dbEndPoint = dbFlag
+	}
+	if dbEndPoint == "" {
+		log.Fatal("No Data Base")
+	}
 	return nil
 }
