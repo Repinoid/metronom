@@ -76,7 +76,7 @@ func foa4Server() error {
 		dbEndPoint = dbFlag
 	}
 	if dbEndPoint == "" {
-		log.Fatal("No Data Base")
+		//	log.Fatal("No Data Base")
 	}
 	return nil
 }
