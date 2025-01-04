@@ -1,10 +1,13 @@
 /*
 metricstest -test.v -test.run="^TestIteration8[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/  -agent-binary-path=cmd/agent/agent.exe -server-port=localhost:8080
+
+metricstest -test.v -test.run="^TestIteration10[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/ -agent-binary-path=cmd/agent/agent.exe -server-port=localhost:8080 -file-storage-path=goshran.txt -database-dsn=postgres://postgres:passwordas@forgo.c7wegmiakpkw.us-west-1.rds.amazonaws.com:5432/postgres
 */
 
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,6 +17,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type gauge float64
@@ -80,6 +84,7 @@ func run() error {
 	router.HandleFunc("/value/", WithLogging(getJSONMetric)).Methods("POST")
 	router.HandleFunc("/", WithLogging(getAllMetrix)).Methods("GET")
 	router.HandleFunc("/", WithLogging(badPost)).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/ping", WithLogging(dbPinger)).Methods("GET")
 
 	router.Use(gzipHandleEncoder)
 	router.Use(gzipHandleDecoder)
@@ -187,4 +192,25 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 	if storeInterval == 0 {
 		_ = memStor.SaveMS(fileStorePath)
 	}
+}
+
+func dbPinger(rwr http.ResponseWriter, req *http.Request) {
+	db, err := sql.Open("pgx", dbEndPoint)
+
+	if err != nil {
+		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
+		rwr.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	perr := db.Ping()
+	if perr != nil {
+		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
+		rwr.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
+	rwr.WriteHeader(http.StatusOK)
+
 }

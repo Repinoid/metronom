@@ -11,14 +11,19 @@ import (
 var storeInterval = 300
 var fileStorePath = "./goshran.txt"
 var reStore = true
+var dbEndPoint string
 
 func foa4Server() error {
+	enva, exists := os.LookupEnv("DATABASE_DSN")
+	if exists {
+		dbEndPoint = enva
+	}
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		host = hoster
 		//		return nil
 	}
-	enva, exists := os.LookupEnv("STORE_INTERVAL")
+	enva, exists = os.LookupEnv("STORE_INTERVAL")
 	if exists {
 		var err error
 		storeInterval, err = strconv.Atoi(enva)
@@ -42,7 +47,9 @@ func foa4Server() error {
 
 	var hostFlag string
 	var fileStoreFlag string
+	var dbFlag string
 
+	flag.StringVar(&dbFlag, "d", host, "Data Base endpoint")
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", fileStorePath, "Only -a={host:port} flag is allowed here")
 	storeIntervalFlag := flag.Int("i", storeInterval, "storeInterval")
@@ -64,6 +71,12 @@ func foa4Server() error {
 	}
 	if _, exists := os.LookupEnv("RESTORE"); !exists {
 		reStore = *restoreFlag
+	}
+	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
+		dbEndPoint = dbFlag
+	}
+	if dbEndPoint == "" {
+		log.Fatal("No Data Base ")
 	}
 	return nil
 }
