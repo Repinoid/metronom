@@ -11,7 +11,7 @@ import (
 var storeInterval = 300
 var fileStorePath = "./goshran.txt"
 var reStore = true
-var dbEndPoint string
+var dbEndPoint = ""
 
 func foa4Server() error {
 	enva, exists := os.LookupEnv("DATABASE_DSN")
