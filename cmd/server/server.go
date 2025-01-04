@@ -120,7 +120,7 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	for nam, val := range memStor.count {
 		fmt.Fprintf(rwr, "Counter Metric name %20s\t\tvalue\t%d\n", nam, val)
 	}
-	rwr.WriteHeader(http.StatusOK)
+	//	rwr.WriteHeader(http.StatusOK)
 }
 func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
@@ -149,7 +149,7 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprint(rwr, nil)
 		return
 	}
-	rwr.WriteHeader(http.StatusOK)
+	//	rwr.WriteHeader(http.StatusOK)
 }
 
 func treatMetric(rwr http.ResponseWriter, req *http.Request) {
@@ -186,7 +186,7 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
-	rwr.WriteHeader(http.StatusOK)
+	//	rwr.WriteHeader(http.StatusOK)
 
 	if storeInterval == 0 {
 		_ = memStor.SaveMS(fileStorePath)

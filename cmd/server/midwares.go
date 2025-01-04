@@ -102,5 +102,5 @@ func gzipHandleDecoder(next http.Handler) http.Handler {
 }
 
 /*
-curl localhost:8087/update/ -H "Content-Type":"application/json" -d "{\"type\":\"gauge\",\"id\":\"nam\",\"value\":77}"
+curl localhost:8080/update/ -H "Content-Type":"application/json" -d "{\"type\":\"gauge\",\"id\":\"nam\",\"value\":77}"
 */

@@ -49,7 +49,7 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprint(rwr, nil)
 		return
 	}
-	rwr.WriteHeader(http.StatusOK)
+	//	rwr.WriteHeader(http.StatusOK)
 
 }
 
@@ -118,7 +118,7 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	rwr.WriteHeader(http.StatusOK)
+	//	rwr.WriteHeader(http.StatusOK)
 	if storeInterval == 0 {
 		_ = memStor.SaveMS(fileStorePath)
 	}
