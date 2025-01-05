@@ -87,6 +87,7 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 			return
 		}
+		rwr.WriteHeader(http.StatusOK)
 		memStor.addCounter(metricName, counter(*metricDelta))
 		// get new value from memstorage
 		var cunt counter
@@ -103,6 +104,7 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 			return
 		}
+		rwr.WriteHeader(http.StatusOK)
 		memStor.addGauge(metricName, gauge(*metricValue))
 		// get new value from memstorage
 		var gaaga gauge
@@ -118,7 +120,7 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	rwr.WriteHeader(http.StatusOK)
+
 	if storeInterval == 0 {
 		_ = memStor.SaveMS(fileStorePath)
 	}
