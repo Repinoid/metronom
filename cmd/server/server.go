@@ -4,6 +4,9 @@ metricstest -test.v -test.run="^TestIteration10[AB]*$" ^
 -agent-binary-path=cmd/agent/agent.exe ^
 -server-port=8080 -file-storage-path=goshran.txt ^
 -database-dsn=postgres://postgres:passwordas@localhost:5432/postgres
+
+
+curl localhost:8080/update/ -H "Content-Type":"application/json" -d "{\"type\":\"gauge\",\"id\":\"nam\",\"value\":77}"
 */
 
 package main
@@ -13,9 +16,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"time"
+
+	"internal/dbaser"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -42,6 +48,15 @@ type Metrics struct {
 var memStor MemStorage
 var host = "localhost:8080"
 var sugar zap.SugaredLogger
+var isBase = false
+
+type str4db struct {
+	MetricBase *pgx.Conn
+}
+
+var MetricBase str4db
+
+var check *bool
 
 func saver(memStor *MemStorage, fnam string) error {
 
@@ -72,6 +87,24 @@ func main() {
 	if storeInterval > 0 {
 		go saver(&memStor, fileStorePath)
 	}
+
+	ctx := context.Background()
+	mb, err := pgx.Connect(ctx, dbEndPoint)
+	MetricBase = str4db{MetricBase: mb}
+	if err != nil {
+		isBase = false
+		log.Printf("Can't connect to DB %s\n", dbEndPoint)
+	} else {
+		err = dbaser.TableCreation(ctx, MetricBase.MetricBase)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to create tables: %v\n", err)
+		} else {
+			isBase = true
+		}
+	}
+	tr := true
+	//	log.Printf("%v\nisBase - %v\ncheck - %v\n\n\n", MetricBase.MetricBase.Config().Host, isBase, check)
+	check = &tr
 
 	if err := run(); err != nil {
 		panic(err)
@@ -159,6 +192,9 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 }
 
 func treatMetric(rwr http.ResponseWriter, req *http.Request) {
+
+	//log.Printf("%v\nisBase - %v\ncheck - %v\n\n\n", MetricBase.MetricBase, isBase, check)
+
 	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
 	metricType := vars["metricType"]
@@ -229,7 +265,7 @@ func dbPinger(rwr http.ResponseWriter, req *http.Request) {
 }
 
 /*
-metricstest -test.v -test.run="^TestIteration10[AB]*$" ^
+metricstest -test.v -test.run="^TestIteration11[AB]*$" ^
 -binary-path=cmd/server/server.exe -source-path=cmd/server/ ^
 -agent-binary-path=cmd/agent/agent.exe ^
 -server-port=8080 -file-storage-path=goshran.txt ^
@@ -237,5 +273,7 @@ metricstest -test.v -test.run="^TestIteration10[AB]*$" ^
 
 
 metricstest -test.v -test.run="^TestIteration1[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/
+
+go run . -d=postgres://postgres:passwordas@localhost:5432/postgres
 
 */

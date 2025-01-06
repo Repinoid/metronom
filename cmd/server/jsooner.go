@@ -105,6 +105,9 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		rwr.WriteHeader(http.StatusOK)
+
+		//	log.Printf("%v\nisBase - %v\ncheck - %v\n\n\n", MetricBase, isBase, check)
+
 		memStor.addGauge(metricName, gauge(*metricValue))
 		// get new value from memstorage
 		var gaaga gauge

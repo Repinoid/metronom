@@ -75,8 +75,9 @@ func foa4Server() error {
 	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
 		dbEndPoint = dbFlag
 	}
-	// if dbEndPoint == "" {
-	// 	//	log.Fatal("No Data Base")
-	// }
+	if dbEndPoint == "" {
+		isBase = false
+		log.Println("No base in Env variable and command line argument")
+	}
 	return nil
 }
