@@ -80,7 +80,7 @@ func main() {
 	}
 
 	//fmt.Println(memStor.Countmetr, memStor.Gaugemetr)
-	log.Printf("base url %v\t\t\tis connected %v\n\n\n", MetricBaseStruct.MetricBase.Config().Host, MetricBaseStruct.IsBase)
+	//log.Printf("base url %v\t\t\tis connected %v\n\n\n", MetricBaseStruct.MetricBase.Config().Host, MetricBaseStruct.IsBase)
 
 	if storeInterval > 0 {
 		go saver(&memStor, fileStorePath)

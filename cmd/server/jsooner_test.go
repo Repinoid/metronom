@@ -75,8 +75,8 @@ func Test_treatJSONMetric(t *testing.T) {
 		},
 	}
 	memStor = MemStorage{
-		gau:   make(map[string]gauge),
-		count: make(map[string]counter),
+		Gaugemetr:   make(map[string]gauge),
+		Countmetr: make(map[string]counter),
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
