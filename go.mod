@@ -1,6 +1,6 @@
-module github.com/Repinoid/metronom
+module main
 
-go 1.22.3
+go 1.23.2
 
 require (
 	github.com/gorilla/mux v1.8.1
@@ -12,10 +12,7 @@ require (
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/puddle/v2 v2.2.2 // indirect
-	github.com/rogpeppe/go-internal v1.13.1 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 )
 
@@ -28,4 +25,12 @@ require (
 
 require internal/dbaser v1.0.0
 
+require internal/memo v1.0.0
+
+require internal/middles v1.0.0
+
 replace internal/dbaser => ./internal/dbaser
+
+replace internal/middles => ./internal/middles
+
+replace internal/memo => ./internal/memo

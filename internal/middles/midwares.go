@@ -1,12 +1,17 @@
-package main
+package middles
 
 import (
 	"compress/gzip"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
 )
+
+var sugar zap.SugaredLogger
 
 type responseData struct {
 	status int
@@ -43,7 +48,12 @@ func WithLogging(origFunc func(w http.ResponseWriter, r *http.Request)) func(w h
 		origFunc(&lw, r) // обслуживание оригинального запроса
 
 		duration := time.Since(start)
-
+		logger, err := zap.NewDevelopment()
+		if err != nil {
+			log.Println("cannot initialize zap")
+		}
+		defer logger.Sync()
+		sugar = *logger.Sugar()
 		sugar.Infoln(
 			"uri", r.RequestURI,
 			"method", r.Method,
@@ -64,7 +74,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func gzipHandleEncoder(next http.Handler) http.Handler {
+func GzipHandleEncoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
 		isTypeOK := strings.Contains(req.Header.Get("Content-Type"), "application/json") ||
 			strings.Contains(req.Header.Get("Content-Type"), "text/html") ||
@@ -80,7 +90,7 @@ func gzipHandleEncoder(next http.Handler) http.Handler {
 		next.ServeHTTP(rwr, req)
 	})
 }
-func gzipHandleDecoder(next http.Handler) http.Handler {
+func GzipHandleDecoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
 
 		if strings.Contains(req.Header.Get("Content-Encoding"), "gzip") {

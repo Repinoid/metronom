@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"internal/dbaser"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/jackc/pgx/v5"
 )
 
 var storeInterval = 300
@@ -76,8 +80,23 @@ func foa4Server() error {
 		dbEndPoint = dbFlag
 	}
 	if dbEndPoint == "" {
-		isBase = false
+		//	isBase = false
 		log.Println("No base in Env variable and command line argument")
+		return nil
 	}
+	ctx := context.Background()
+	mb, err := pgx.Connect(ctx, dbEndPoint)
+	MetricBaseStruct = dbaser.Struct4db{MetricBase: mb, Ctx: ctx, IsBase: false}
+	if err != nil {
+		log.Printf("Can't connect to DB %s\n", dbEndPoint)
+		return nil
+	}
+	err = dbaser.TableCreation(ctx, MetricBaseStruct.MetricBase)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to create tables: %v\n", err)
+		return nil
+	}
+	MetricBaseStruct.IsBase = true
+
 	return nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"internal/memo"
 	"io"
 	"net/http"
 )
@@ -26,7 +27,8 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	switch metra.MType {
 	case "counter":
 		var cunt counter
-		if memStor.getCounterValue(metra.ID, &cunt) != nil {
+		if memo.GetCounterValue(&memStor, MetricBaseStruct, metra.ID, &cunt) != nil {
+			//	if memStor.GetCounterValue(metra.ID, &cunt) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(rwr, nil)
 			return
@@ -36,7 +38,8 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		json.NewEncoder(rwr).Encode(metra)
 	case "gauge":
 		var gaaga gauge
-		if memStor.getGaugeValue(metra.ID, &gaaga) != nil {
+		if memo.GetGaugeValue(&memStor, MetricBaseStruct, metra.ID, &gaaga) != nil {
+			//if memStor.GetGaugeValue(metra.ID, &gaaga) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(rwr, nil)
 			return
@@ -88,10 +91,12 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		rwr.WriteHeader(http.StatusOK)
-		memStor.addCounter(metricName, counter(*metricDelta))
+		//	memStor.AddCounter(metricName, counter(*metricDelta))
+		memo.AddCounter(&memStor, MetricBaseStruct, metricName, counter(*metricDelta))
 		// get new value from memstorage
 		var cunt counter
-		if memStor.getCounterValue(metra.ID, &cunt) != nil {
+		if memo.GetCounterValue(&memStor, MetricBaseStruct, metra.ID, &cunt) != nil {
+			//	if memStor.GetCounterValue(metra.ID, &cunt) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(rwr, nil)
 			return
@@ -108,10 +113,11 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 
 		//	log.Printf("%v\nisBase - %v\ncheck - %v\n\n\n", MetricBase, isBase, check)
 
-		memStor.addGauge(metricName, gauge(*metricValue))
+		memo.AddGauge(&memStor, MetricBaseStruct, metricName, gauge(*metricValue))
 		// get new value from memstorage
 		var gaaga gauge
-		if memStor.getGaugeValue(metra.ID, &gaaga) != nil {
+		if memo.GetGaugeValue(&memStor, MetricBaseStruct, metra.ID, &gaaga) != nil {
+			//	if memStor.GetGaugeValue(metra.ID, &gaaga) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(rwr, nil)
 			return

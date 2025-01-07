@@ -16,27 +16,21 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"strconv"
-	"sync"
 	"time"
 
 	"internal/dbaser"
+	"internal/memo"
+	"internal/middles"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 
 	"github.com/jackc/pgx/v5"
-	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type gauge float64
-type counter int64
-type MemStorage struct {
-	gau    map[string]gauge
-	count  map[string]counter
-	mutter sync.RWMutex
-}
+type gauge = memo.Gauge
+type counter = memo.Counter
+type MemStorage = memo.MemStorage
 
 type Metrics struct {
 	ID    string   `json:"id"`              // имя метрики
@@ -48,15 +42,16 @@ type Metrics struct {
 var memStor MemStorage
 var host = "localhost:8080"
 var sugar zap.SugaredLogger
-var isBase = false
 
-type str4db struct {
-	MetricBase *pgx.Conn
-}
+//var isBase = false
 
-var MetricBase str4db
+// type str4db struct {
+// 	ctx        context.Context
+// 	isBase     bool
+// 	MetricBase *pgx.Conn
+// }
 
-var check *bool
+var MetricBaseStruct dbaser.Struct4db
 
 func saver(memStor *MemStorage, fnam string) error {
 
@@ -76,35 +71,20 @@ func main() {
 	}
 
 	memStor = MemStorage{
-		gau:   make(map[string]gauge),
-		count: make(map[string]counter),
+		Gaugemetr: make(map[string]memo.Gauge),
+		Countmetr: make(map[string]memo.Counter),
 	}
 
 	if reStore {
 		_ = memStor.LoadMS(fileStorePath)
 	}
 
+	//fmt.Println(memStor.Countmetr, memStor.Gaugemetr)
+	log.Printf("base url %v\t\t\tis connected %v\n\n\n", MetricBaseStruct.MetricBase.Config().Host, MetricBaseStruct.IsBase)
+
 	if storeInterval > 0 {
 		go saver(&memStor, fileStorePath)
 	}
-
-	ctx := context.Background()
-	mb, err := pgx.Connect(ctx, dbEndPoint)
-	MetricBase = str4db{MetricBase: mb}
-	if err != nil {
-		isBase = false
-		log.Printf("Can't connect to DB %s\n", dbEndPoint)
-	} else {
-		err = dbaser.TableCreation(ctx, MetricBase.MetricBase)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to create tables: %v\n", err)
-		} else {
-			isBase = true
-		}
-	}
-	tr := true
-	//	log.Printf("%v\nisBase - %v\ncheck - %v\n\n\n", MetricBase.MetricBase.Config().Host, isBase, check)
-	check = &tr
 
 	if err := run(); err != nil {
 		panic(err)
@@ -115,17 +95,17 @@ func main() {
 func run() error {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", WithLogging(treatMetric)).Methods("POST")
-	router.HandleFunc("/update/", WithLogging(treatJSONMetric)).Methods("POST")
-	router.HandleFunc("/value/{metricType}/{metricName}", WithLogging(getMetric)).Methods("GET")
-	router.HandleFunc("/value/", WithLogging(getJSONMetric)).Methods("POST")
-	router.HandleFunc("/", WithLogging(getAllMetrix)).Methods("GET")
-	router.HandleFunc("/", WithLogging(badPost)).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", middles.WithLogging(treatMetric)).Methods("POST")
+	router.HandleFunc("/update/", middles.WithLogging(treatJSONMetric)).Methods("POST")
+	router.HandleFunc("/value/{metricType}/{metricName}", middles.WithLogging(getMetric)).Methods("GET")
+	router.HandleFunc("/value/", middles.WithLogging(getJSONMetric)).Methods("POST")
+	router.HandleFunc("/", middles.WithLogging(getAllMetrix)).Methods("GET")
+	router.HandleFunc("/", middles.WithLogging(badPost)).Methods("POST") // if POST with wrong arguments structure
 	//	router.HandleFunc("/ping", WithLogging(dbPinger)).Methods("GET")
 	router.HandleFunc("/ping", dbPinger).Methods("GET")
 
-	router.Use(gzipHandleEncoder)
-	router.Use(gzipHandleDecoder)
+	router.Use(middles.GzipHandleEncoder)
+	router.Use(middles.GzipHandleDecoder)
 
 	logger, err := zap.NewDevelopment()
 	if err != nil {
@@ -135,104 +115,6 @@ func run() error {
 	sugar = *logger.Sugar()
 
 	return http.ListenAndServe(host, router)
-}
-
-func badPost(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/html")
-	rwr.WriteHeader(http.StatusNotFound)
-	fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
-}
-
-func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/html")
-	if req.URL.Path != "/" { // if GET with wrong arguments structure
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-		return
-	}
-	memStor.mutter.RLock() // <---- MUTEX
-	defer memStor.mutter.RUnlock()
-	for nam, val := range memStor.gau {
-		flo := strconv.FormatFloat(float64(val), 'f', -1, 64) // -1 - to remove zeroes tail
-		fmt.Fprintf(rwr, "Gauge Metric name   %20s\t\tvalue\t%s\n", nam, flo)
-	}
-	for nam, val := range memStor.count {
-		fmt.Fprintf(rwr, "Counter Metric name %20s\t\tvalue\t%d\n", nam, val)
-	}
-	rwr.WriteHeader(http.StatusOK)
-}
-func getMetric(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/html")
-	vars := mux.Vars(req)
-	metricType := vars["metricType"]
-	metricName := vars["metricName"]
-	switch metricType {
-	case "counter":
-		var cunt counter
-		if memStor.getCounterValue(metricName, &cunt) != nil {
-			rwr.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(rwr, nil)
-			return
-		}
-		fmt.Fprint(rwr, cunt)
-	case "gauge":
-		var gaaga gauge
-		if memStor.getGaugeValue(metricName, &gaaga) != nil {
-			rwr.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(rwr, nil)
-			return
-		}
-		fmt.Fprint(rwr, gaaga)
-	default:
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(rwr, nil)
-		return
-	}
-	rwr.WriteHeader(http.StatusOK)
-}
-
-func treatMetric(rwr http.ResponseWriter, req *http.Request) {
-
-	//log.Printf("%v\nisBase - %v\ncheck - %v\n\n\n", MetricBase.MetricBase, isBase, check)
-
-	rwr.Header().Set("Content-Type", "text/html")
-	vars := mux.Vars(req)
-	metricType := vars["metricType"]
-	metricName := vars["metricName"]
-	metricValue := vars["metricValue"]
-	if metricValue == "" {
-		rwr.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
-		return
-	}
-	switch metricType {
-	case "counter":
-		value, err := strconv.ParseInt(metricValue, 10, 64)
-		if err != nil {
-			rwr.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-			return
-		}
-		memStor.addCounter(metricName, counter(value))
-	case "gauge":
-		value, err := strconv.ParseFloat(metricValue, 64)
-		if err != nil {
-			rwr.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-			return
-		}
-		memStor.addGauge(metricName, gauge(value))
-	default:
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-		return
-	}
-	rwr.WriteHeader(http.StatusOK)
-	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
-
-	if storeInterval == 0 {
-		_ = memStor.SaveMS(fileStorePath)
-	}
 }
 
 func dbPinger(rwr http.ResponseWriter, req *http.Request) {
