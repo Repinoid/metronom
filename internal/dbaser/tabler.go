@@ -3,6 +3,7 @@ package dbaser
 import (
 	"context"
 	"fmt"
+	"log"
 
 	//	"log"
 
@@ -122,4 +123,51 @@ func TableGetCounter(ctx context.Context, db *pgx.Conn, mname string) (int64, er
 		return 0, fmt.Errorf("error get %s counter metric.  %w", mname, err)
 	}
 	return inta, nil
+}
+
+type Gauge float64
+type Counter int64
+
+func TableBunchGauges(ctx context.Context, db *pgx.Conn, gaaga map[string]Gauge) error {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("error db.Begin  %[1]w", err)
+	}
+	for gaugeName, value := range gaaga {
+		order := fmt.Sprintf("UPDATE Gauge SET value=%[2]f WHERE metricname='%[1]s'", gaugeName, value)
+		tagUpdate, _ := tx.Exec(ctx, order)
+		tu := tagUpdate.RowsAffected()
+		if tu != 0 { // если удалось записать - уже существует и INSERT не нужен
+			continue
+		}
+		order = fmt.Sprintf("INSERT INTO Gauge(metricname, value) VALUES ('%[1]s',%[2]f);", gaugeName, value)
+		tagInsert, err := tx.Exec(ctx, order)
+		if err != nil {
+			log.Printf("error UPDATE Gauge %s with %f value. TagInsert is \"%s\" TagUpdate is \"%s\" error is %v",
+				gaugeName, value, tagInsert.String(), tagUpdate.String(), err)
+		}
+	}
+	return tx.Commit(ctx)
+}
+
+func TableBunchCounters(ctx context.Context, db *pgx.Conn, gaaga map[string]Counter) error {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("error db.Begin  %[1]w", err)
+	}
+	for counterName, value := range gaaga {
+		order := fmt.Sprintf("UPDATE Counter SET value=%[2]d WHERE metricname='%[1]s'", counterName, value)
+		tagUpdate, _ := tx.Exec(ctx, order)
+		tu := tagUpdate.RowsAffected()
+		if tu != 0 { // если удалось записать - уже существует и INSERT не нужен
+			continue
+		}
+		order = fmt.Sprintf("INSERT INTO Counter(metricname, value) VALUES ('%[1]s',%[2]d);", counterName, value)
+		tagInsert, err := tx.Exec(ctx, order)
+		if err != nil {
+			log.Printf("error UPDATE Counter %s with %d value. TagInsert is \"%s\" TagUpdate is \"%s\" error is %v",
+				counterName, value, tagInsert.String(), tagUpdate.String(), err)
+		}
+	}
+	return tx.Commit(ctx)
 }
