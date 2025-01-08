@@ -134,3 +134,5 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		_ = memStor.SaveMS(fileStorePath)
 	}
 }
+func buncheras(rwr http.ResponseWriter, req *http.Request) {
+}
