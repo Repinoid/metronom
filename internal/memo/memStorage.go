@@ -33,9 +33,9 @@ func AddGauge(memorial *MemStorage, baza dbaser.Struct4db, name string, value ga
 	}
 	memorial.Mutter.Lock()
 	defer memorial.Mutter.Unlock()
-	log.Printf("BEFORE %+v\t%+v\n", memorial.Countmetr, memorial.Gaugemetr)
+	//	log.Printf("BEFORE %+v\t%+v\n", memorial.Countmetr, memorial.Gaugemetr)
 	memorial.Gaugemetr[name] = value
-	log.Printf("AFTER %+v\t%+v\n", memorial.Countmetr, memorial.Gaugemetr)
+	//	log.Printf("AFTER %+v\t%+v\n", memorial.Countmetr, memorial.Gaugemetr)
 	return nil
 }
 func AddCounter(memorial *MemStorage, baza dbaser.Struct4db, name string, value counter) error {
@@ -62,7 +62,7 @@ func GetCounterValue(memorial *MemStorage, baza dbaser.Struct4db, name string, v
 			*value = counter(cunt)
 			return nil
 		}
-		log.Printf("from memstorage %v\nisBase - %v\\n\n\n", memorial, baza)
+		//	log.Printf("from memstorage %v\nisBase - %v\\n\n\n", memorial, baza)
 	}
 	memorial.Mutter.RLock() // <---- MUTEX
 	defer memorial.Mutter.RUnlock()
@@ -80,7 +80,7 @@ func GetGaugeValue(memorial *MemStorage, baza dbaser.Struct4db, name string, val
 			*value = gauge(gaaga)
 			return nil
 		}
-		log.Printf("from memstorage %v\nisBase - %v\\n\n\n", memorial, baza)
+		//log.Printf("from memstorage %v\nisBase - %v\\n\n\n", memorial, baza)
 	}
 	memorial.Mutter.RLock() // <---- MUTEX
 	defer memorial.Mutter.RUnlock()
