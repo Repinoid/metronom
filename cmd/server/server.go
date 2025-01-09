@@ -78,7 +78,7 @@ func main() {
 		Countmetr: make(map[string]counter),
 	}
 
-	if reStore && !MetricBaseStruct.IsBase {
+	if reStore  {
 		//_ = LoadMS(&memStor, "Y:/GO/ypro/goshran.txt")
 		//		_ = memo.LoadMS(&memStor, fileStorePath)
 		_ = memStor.LoadMS(fileStorePath)
