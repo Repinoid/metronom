@@ -33,7 +33,9 @@ func AddGauge(memorial *MemStorage, baza dbaser.Struct4db, name string, value ga
 	}
 	memorial.Mutter.Lock()
 	defer memorial.Mutter.Unlock()
+	log.Printf("BEFORE %+v\t%+v\n", memorial.Countmetr, memorial.Gaugemetr)
 	memorial.Gaugemetr[name] = value
+	log.Printf("AFTER %+v\t%+v\n", memorial.Countmetr, memorial.Gaugemetr)
 	return nil
 }
 func AddCounter(memorial *MemStorage, baza dbaser.Struct4db, name string, value counter) error {
@@ -90,12 +92,18 @@ func GetGaugeValue(memorial *MemStorage, baza dbaser.Struct4db, name string, val
 }
 
 type MStorJSON struct {
-	Gaugemetr map[string]gauge
-	Countmetr map[string]counter
+	Gaugemetr map[string]gauge   // `json:"omitempty"`
+	Countmetr map[string]counter //`json:"omitempty"`
 }
 
 func (memorial *MemStorage) UnmarshalMS(data []byte) error {
-	memor := MStorJSON{}
+	memor := MStorJSON{
+		Gaugemetr: make(map[string]gauge),
+		Countmetr: make(map[string]counter),
+	}
+	// memor := MStorJSON{}
+	// memor.Gaugemetr = map[string]gauge{}
+	// memor.Countmetr = make(map[string]counter)
 	buf := bytes.NewBuffer(data)
 	memorial.Mutter.Lock()
 	err := json.NewDecoder(buf).Decode(&memor)
@@ -126,11 +134,13 @@ func (memorial *MemStorage) LoadMS(fnam string) error {
 		return fmt.Errorf("file %s Read error %v", fnam, err)
 	}
 	err = memorial.UnmarshalMS(data)
+	//	log.Printf("LoadMS    %+v\ndata %+v\n\n\n\n", memorial, string(data))
 	if err != nil {
 		return fmt.Errorf(" Memstorage UnMarshal error %v", err)
 	}
 	return nil
 }
+
 func (memorial *MemStorage) SaveMS(fnam string) error {
 	phil, err := os.OpenFile(fnam, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {

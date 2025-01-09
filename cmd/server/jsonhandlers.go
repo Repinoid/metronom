@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"internal/dbaser"
 	"internal/memo"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -135,4 +138,35 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 func buncheras(rwr http.ResponseWriter, req *http.Request) {
+	telo, err := io.ReadAll(req.Body)
+	if err != nil {
+		rwr.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	buf := bytes.NewBuffer(telo)
+	memor := []dbaser.Metrics{}
+	err = json.NewDecoder(buf).Decode(&memor)
+	if err != nil {
+		rwr.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	// //----------------------------
+	// ctx := context.Background()
+	// db, err := pgx.Connect(ctx, "postgres://postgres:passwordas@localhost:5432/forgo")
+	// if err != nil {
+	// 	log.Printf("%-v", err)
+	// }
+	// //-----------------------------------------------
+	err = dbaser.TableBuncher(MetricBaseStruct.Ctx, MetricBaseStruct.MetricBase, memor)
+	if err != nil {
+		log.Printf("%-v", err)
+	}
+
+	// for _, j := range memor {
+	// 	fmt.Printf("%+v\n", j)
+	// }
+
+	reply := struct{ Dlina int }{Dlina: len(memor)}
+	json.NewEncoder(rwr).Encode(reply)
+
 }
