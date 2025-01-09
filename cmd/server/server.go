@@ -54,7 +54,6 @@ var sugar zap.SugaredLogger
 var MetricBaseStruct dbaser.Struct4db
 
 func saver(memStor *MemStorage, fnam string) error {
-
 	for {
 		time.Sleep(time.Duration(storeInterval) * time.Second)
 		err := memStor.SaveMS(fnam)
@@ -78,7 +77,8 @@ func main() {
 		Countmetr: make(map[string]counter),
 	}
 
-	if reStore && !MetricBaseStruct.IsBase {
+	//	if reStore && !MetricBaseStruct.IsBase {
+	if reStore {
 		//_ = LoadMS(&memStor, "Y:/GO/ypro/goshran.txt")
 		//		_ = memo.LoadMS(&memStor, fileStorePath)
 		_ = memStor.LoadMS(fileStorePath)
