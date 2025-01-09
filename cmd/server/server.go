@@ -75,7 +75,9 @@ func main() {
 		Countmetr: make(map[string]memo.Counter),
 	}
 
-	if reStore {
+	if reStore  {
+		//_ = LoadMS(&memStor, "Y:/GO/ypro/goshran.txt")
+		//		_ = memo.LoadMS(&memStor, fileStorePath)
 		_ = memStor.LoadMS(fileStorePath)
 	}
 
@@ -97,7 +99,6 @@ func run() error {
 	router := mux.NewRouter()
 	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", middles.WithLogging(treatMetric)).Methods("POST")
 	router.HandleFunc("/update/", middles.WithLogging(treatJSONMetric)).Methods("POST")
-	router.HandleFunc("/updates/", middles.WithLogging(buncheras)).Methods("POST")
 	router.HandleFunc("/value/{metricType}/{metricName}", middles.WithLogging(getMetric)).Methods("GET")
 	router.HandleFunc("/value/", middles.WithLogging(getJSONMetric)).Methods("POST")
 	router.HandleFunc("/", middles.WithLogging(getAllMetrix)).Methods("GET")

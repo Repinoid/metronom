@@ -3,7 +3,6 @@ package dbaser
 import (
 	"context"
 	"fmt"
-	"log"
 
 	//	"log"
 
