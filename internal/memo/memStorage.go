@@ -6,17 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"internal/dbaser"
+	"log"
 	"sync"
 
 	"os"
 )
-
-type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
 
 type Gauge float64
 type Counter int64
@@ -28,13 +22,13 @@ type MemStorage struct {
 	Mutter    sync.RWMutex
 }
 
+// func (memorial *MemStorage) AddGauge(name string, value gauge) error {
 func AddGauge(memorial *MemStorage, baza dbaser.Struct4db, name string, value gauge) error {
 	if baza.IsBase {
-		valadr := float64(value)
-		metro := dbaser.Metrics{ID: name, MType: "counter", Value: &valadr}
-		err := dbaser.TableMetricWrapper(dbaser.TablePutGauge)(&baza, &metro)
+		err := dbaser.TablePutGauge(baza.Ctx, baza.MetricBase, name, float64(value))
 		if err != nil {
-			return fmt.Errorf("AddGauge err name %s value %g baza %+v err %w\n", name, value, baza, err)
+			log.Printf("from memstorage %v\nisBase - %v\\n\n\n", memorial, baza)
+			//sugar.Errorf("err", err)
 		}
 	}
 	memorial.Mutter.Lock()
@@ -44,11 +38,9 @@ func AddGauge(memorial *MemStorage, baza dbaser.Struct4db, name string, value ga
 }
 func AddCounter(memorial *MemStorage, baza dbaser.Struct4db, name string, value counter) error {
 	if baza.IsBase {
-		valadr := int64(value)
-		metro := dbaser.Metrics{ID: name, MType: "counter", Delta: &valadr}
-		err := dbaser.TableMetricWrapper(dbaser.TablePutCounter)(&baza, &metro)
+		err := dbaser.TablePutCounter(baza.Ctx, baza.MetricBase, name, int64(value))
 		if err != nil {
-			return fmt.Errorf("AddCounter err name %s value %d baza %+v err %w\n", name, value, baza, err)
+			log.Printf("from memstorage %v\nisBase - %v\\n\n\n", memorial, baza)
 		}
 	}
 	memorial.Mutter.Lock()
@@ -61,16 +53,14 @@ func AddCounter(memorial *MemStorage, baza dbaser.Struct4db, name string, value 
 	return nil
 }
 func GetCounterValue(memorial *MemStorage, baza dbaser.Struct4db, name string, value *counter) error {
+	//func (memorial *MemStorage) GetCounterValue(name string, value *counter) error {
 	if baza.IsBase {
-		var cunt int64
-		metro := dbaser.Metrics{ID: name, MType: "counter", Delta: &cunt}
-		//	err := dbaser.TableGetCounter(&baza, name, &cunt)
-		err := dbaser.TableMetricWrapper(dbaser.TableGetMetric)(&baza, &metro)
+		cunt, err := dbaser.TableGetCounter(baza.Ctx, baza.MetricBase, name)
 		if err == nil {
 			*value = counter(cunt)
 			return nil
 		}
-		return fmt.Errorf("GetCounter err name %s value %d baza %+v err %w\n", name, value, baza, err)
+		log.Printf("from memstorage %v\nisBase - %v\\n\n\n", memorial, baza)
 	}
 	memorial.Mutter.RLock() // <---- MUTEX
 	defer memorial.Mutter.RUnlock()
@@ -81,18 +71,14 @@ func GetCounterValue(memorial *MemStorage, baza dbaser.Struct4db, name string, v
 	return fmt.Errorf("no %s key", name)
 }
 func GetGaugeValue(memorial *MemStorage, baza dbaser.Struct4db, name string, value *gauge) error {
+	//func (memorial *MemStorage) GetGaugeValue(name string, value *gauge) error {
 	if baza.IsBase {
-		var gaaga float64
-		//		var gaaga float64
-		metro := dbaser.Metrics{ID: name, MType: "gauge", Value: &gaaga}
-		//		err := dbaser.TableGetGauge(&baza, name, &gaaga)
-		err := dbaser.TableMetricWrapper(dbaser.TableGetMetric)(&baza, &metro)
+		gaaga, err := dbaser.TableGetGauge(baza.Ctx, baza.MetricBase, name)
 		if err == nil {
-			*value = gauge(*metro.Value)
-			//			*value = gauge(gaaga)
+			*value = gauge(gaaga)
 			return nil
 		}
-		return fmt.Errorf("GetGauge err name %s value %d baza %+v err %w\n", name, value, baza, err)
+		log.Printf("from memstorage %v\nisBase - %v\\n\n\n", memorial, baza)
 	}
 	memorial.Mutter.RLock() // <---- MUTEX
 	defer memorial.Mutter.RUnlock()
