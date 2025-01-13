@@ -31,7 +31,6 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	case "counter":
 		var cunt counter
 		if memo.GetCounterValue(&memStor, MetricBaseStruct, metra.ID, &cunt) != nil {
-			//	if memStor.GetCounterValue(metra.ID, &cunt) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(rwr, nil)
 			return
@@ -42,7 +41,6 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	case "gauge":
 		var gaaga gauge
 		if memo.GetGaugeValue(&memStor, MetricBaseStruct, metra.ID, &gaaga) != nil {
-			//if memStor.GetGaugeValue(metra.ID, &gaaga) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(rwr, nil)
 			return
@@ -94,12 +92,10 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		rwr.WriteHeader(http.StatusOK)
-		//	memStor.AddCounter(metricName, counter(*metricDelta))
 		memo.AddCounter(&memStor, MetricBaseStruct, metricName, counter(*metricDelta))
 		// get new value from memstorage
 		var cunt counter
 		if memo.GetCounterValue(&memStor, MetricBaseStruct, metra.ID, &cunt) != nil {
-			//	if memStor.GetCounterValue(metra.ID, &cunt) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(rwr, nil)
 			return
@@ -114,13 +110,11 @@ func treatJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		}
 		rwr.WriteHeader(http.StatusOK)
 
-		//	log.Printf("%v\nisBase - %v\ncheck - %v\n\n\n", MetricBase, isBase, check)
 
 		memo.AddGauge(&memStor, MetricBaseStruct, metricName, gauge(*metricValue))
 		// get new value from memstorage
 		var gaaga gauge
 		if memo.GetGaugeValue(&memStor, MetricBaseStruct, metra.ID, &gaaga) != nil {
-			//	if memStor.GetGaugeValue(metra.ID, &gaaga) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(rwr, nil)
 			return
@@ -150,13 +144,6 @@ func buncheras(rwr http.ResponseWriter, req *http.Request) {
 		rwr.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	// //----------------------------
-	// ctx := context.Background()
-	// db, err := pgx.Connect(ctx, "postgres://postgres:passwordas@localhost:5432/forgo")
-	// if err != nil {
-	// 	log.Printf("%-v", err)
-	// }
-	// //-----------------------------------------------
 	if MetricBaseStruct.IsBase {
 		err = dbaser.TableBuncher(MetricBaseStruct.Ctx, MetricBaseStruct.MetricBase, memor)
 		if err != nil {
@@ -181,11 +168,6 @@ func buncheras(rwr http.ResponseWriter, req *http.Request) {
 	}
 	memStor.Mutter.Unlock()
 
-	// for _, j := range memor {
-	// 	fmt.Printf("%+v\n", j)
-	// }
-
-	//reply := struct{ Dlina int }{Dlina: len(memor)}
 	json.NewEncoder(rwr).Encode(&memor)
 
 }

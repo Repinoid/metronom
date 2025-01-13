@@ -80,7 +80,6 @@ func foa4Server() error {
 		dbEndPoint = dbFlag
 	}
 	if dbEndPoint == "" {
-		//	isBase = false
 		log.Println("No base in Env variable and command line argument")
 		return nil
 	}

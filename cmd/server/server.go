@@ -43,14 +43,6 @@ var memStor MemStorage
 var host = "localhost:8080"
 var sugar zap.SugaredLogger
 
-//var isBase = false
-
-// type str4db struct {
-// 	ctx        context.Context
-// 	isBase     bool
-// 	MetricBase *pgx.Conn
-// }
-
 var MetricBaseStruct dbaser.Struct4db
 
 func saver(memStor *MemStorage, fnam string) error {
@@ -70,20 +62,14 @@ func main() {
 		return
 	}
 
-		memStor = MemStorage{
+	memStor = MemStorage{
 		Gaugemetr: make(map[string]gauge),
 		Countmetr: make(map[string]counter),
 	}
 
 	if reStore && !MetricBaseStruct.IsBase {
-		//_ = LoadMS(&memStor, "Y:/GO/ypro/goshran.txt")
-		//		_ = memo.LoadMS(&memStor, fileStorePath)
 		_ = memStor.LoadMS(fileStorePath)
-
 	}
-
-	//log.Printf("%+v\t%+v\n", memStor.Countmetr, memStor.Gaugemetr)
-	//log.Printf("base url %v\t\t\tis connected %v\n\n\n", MetricBaseStruct.MetricBase.Config().Host, MetricBaseStruct.IsBase)
 
 	if storeInterval > 0 {
 		go saver(&memStor, fileStorePath)
@@ -105,7 +91,7 @@ func run() error {
 	router.HandleFunc("/value/", middles.WithLogging(getJSONMetric)).Methods("POST")
 	router.HandleFunc("/", middles.WithLogging(getAllMetrix)).Methods("GET")
 	router.HandleFunc("/", middles.WithLogging(badPost)).Methods("POST") // if POST with wrong arguments structure
-	//	router.HandleFunc("/ping", WithLogging(dbPinger)).Methods("GET")
+	router.HandleFunc("/ping", middles.WithLogging(dbPinger)).Methods("GET")
 	router.HandleFunc("/ping", dbPinger).Methods("GET")
 
 	router.Use(middles.GzipHandleEncoder)
@@ -123,16 +109,11 @@ func run() error {
 
 func dbPinger(rwr http.ResponseWriter, req *http.Request) {
 
-	//db, err := sql.Open("pgx", dbEndPoint)
-
 	ctx := context.Background()
 	db, err := pgx.Connect(ctx, dbEndPoint)
 
-	//	log.Printf("Endpoint is %s\n", dbEndPoint)
-
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)
-		//		log.Printf("Open DB error is %v\n", err)
 		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
 		return
 	}
@@ -142,11 +123,9 @@ func dbPinger(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
-		//	log.Printf("PING DB error is %v\n", err)
 		return
 	}
 	rwr.WriteHeader(http.StatusOK)
-	//log.Printf("AFTER PING DB error is %v\n", err)
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
 }
 

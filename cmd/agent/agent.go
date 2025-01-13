@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand/v2"
-	"net/http"
 	"runtime"
-	"strconv"
 	"sync"
 	"time"
 
@@ -77,44 +75,6 @@ func getMetrix(memStor *MemStorage) error {
 	}
 	return nil
 }
-func postMetric(metricType, metricName, metricValue string) error {
-	var metr Metrics
-	switch metricType {
-	case "counter":
-		val, err := strconv.ParseInt(metricValue, 10, 64)
-		if err != nil {
-			return fmt.Errorf("wrong counter value %w", err)
-		}
-		metr = Metrics{
-			ID:    metricName,
-			MType: metricType,
-			Delta: &val,
-		}
-	case "gauge":
-		val, err := strconv.ParseFloat(metricValue, 64)
-		if err != nil {
-			return fmt.Errorf("wrong gauge value %w", err)
-		}
-		metr = Metrics{
-			ID:    metricName,
-			MType: metricType,
-			Value: &val,
-		}
-	default:
-		return fmt.Errorf("wrong metric type")
-	}
-	march, err := json.Marshal(metr)
-	if err != nil {
-		return fmt.Errorf("could not marshal metr %w", err)
-	}
-	resp, err := http.Post("http://"+host+"/update/", "application/json", bytes.NewBuffer(march))
-	if err != nil {
-		return fmt.Errorf("could not post %w", err)
-	}
-	defer resp.Body.Close()
-
-	return nil
-}
 
 func main() {
 	if err := foa4Agent(); err != nil {
@@ -148,22 +108,6 @@ func run() error {
 		if err != nil {
 			log.Printf("AGENT postBunch ERROR %+v\n", err)
 		}
-
-		// for name, value := range memStor.gau {
-		// 	valStr := strconv.FormatFloat(float64(value), 'f', 4, 64)
-		// 	err := postMetric("gauge", name, valStr)
-		// 	if err != nil {
-		// 		log.Println(err, "gauge", name, valStr)
-		// 	}
-		// }
-		// for name := range memStor.count {
-		// 	valStr := strconv.FormatInt(int64(cunt), 10)
-		// 	err := postMetric("counter", name, valStr)
-		// 	if err != nil {
-		// 		log.Println(err, "counter", name, valStr)
-		// 	}
-		// }
-
 	}
 }
 

@@ -22,7 +22,6 @@ type MemStorage struct {
 	Mutter    sync.RWMutex
 }
 
-// func (memorial *MemStorage) AddGauge(name string, value gauge) error {
 func AddGauge(memorial *MemStorage, baza dbaser.Struct4db, name string, value gauge) error {
 	if baza.IsBase {
 		err := dbaser.TablePutGauge(baza.Ctx, baza.MetricBase, name, float64(value))
@@ -53,7 +52,6 @@ func AddCounter(memorial *MemStorage, baza dbaser.Struct4db, name string, value 
 	return nil
 }
 func GetCounterValue(memorial *MemStorage, baza dbaser.Struct4db, name string, value *counter) error {
-	//func (memorial *MemStorage) GetCounterValue(name string, value *counter) error {
 	if baza.IsBase {
 		cunt, err := dbaser.TableGetCounter(baza.Ctx, baza.MetricBase, name)
 		if err == nil {
@@ -71,7 +69,6 @@ func GetCounterValue(memorial *MemStorage, baza dbaser.Struct4db, name string, v
 	return fmt.Errorf("no %s key", name)
 }
 func GetGaugeValue(memorial *MemStorage, baza dbaser.Struct4db, name string, value *gauge) error {
-	//func (memorial *MemStorage) GetGaugeValue(name string, value *gauge) error {
 	if baza.IsBase {
 		gaaga, err := dbaser.TableGetGauge(baza.Ctx, baza.MetricBase, name)
 		if err == nil {
