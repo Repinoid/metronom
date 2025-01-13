@@ -205,5 +205,6 @@ func TableBunchCounters(ctx context.Context, db *pgx.Conn, gaaga map[string]Coun
 				counterName, value, tagInsert.String(), tagUpdate.String(), err)
 		}
 	}
+	
 	return tx.Commit(ctx)
 }
