@@ -213,7 +213,7 @@ func TableMetricWrapper(origFunc func(MetricBaseStruct *Struct4db, metr *Metrics
 				if err = origFunc(MetricBaseStruct, metr); err == nil {
 					break
 				}
-				fmt.Println(delay, " MetricWrapper !")
+			//	fmt.Println(delay, " MetricWrapper !")
 			}
 		}
 		return err
@@ -230,7 +230,7 @@ func TableBuncherWrapper(origFunc func(MetricBaseStruct *Struct4db, metrArray []
 				if err = origFunc(MetricBaseStruct, metrArray); err == nil {
 					break
 				}
-				fmt.Println(delay, " BUNCHWrapper !")
+			//	fmt.Println(delay, " BUNCHWrapper !")
 			}
 		}
 		return err
@@ -248,7 +248,7 @@ func TableGetAllsWrapper[MV MetricValueTypes](origFunc func(MetricBaseStruct *St
 				if err = origFunc(MetricBaseStruct, mappa); err == nil {
 					break
 				}
-				fmt.Println(delay, "TableGetAllsWrapper !")
+			//	fmt.Println(delay, "TableGetAllsWrapper !")
 			}
 		}
 		return err
