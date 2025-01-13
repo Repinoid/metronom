@@ -3,7 +3,7 @@ metricstest -test.v -test.run="^TestIteration10[AB]*$" ^
 -binary-path=cmd/server/server.exe -source-path=cmd/server/ ^
 -agent-binary-path=cmd/agent/agent.exe ^
 -server-port=8080 -file-storage-path=goshran.txt ^
--database-dsn=postgres://postgres:passwordas@localhost:5432/postgres
+-database-dsn=postgres://postgres:passwordas@localhost:5432/forgo
 
 
 curl localhost:8080/update/ -H "Content-Type":"application/json" -d "{\"type\":\"gauge\",\"id\":\"nam\",\"value\":77}"
@@ -70,7 +70,7 @@ func main() {
 		return
 	}
 
-		memStor = MemStorage{
+	memStor = MemStorage{
 		Gaugemetr: make(map[string]gauge),
 		Countmetr: make(map[string]counter),
 	}
@@ -123,12 +123,8 @@ func run() error {
 
 func dbPinger(rwr http.ResponseWriter, req *http.Request) {
 
-	//db, err := sql.Open("pgx", dbEndPoint)
-
 	ctx := context.Background()
 	db, err := pgx.Connect(ctx, dbEndPoint)
-
-	//	log.Printf("Endpoint is %s\n", dbEndPoint)
 
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)
