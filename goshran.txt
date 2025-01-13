@@ -1,2 +1,2 @@
-{"Gaugemetr":{"Alloc":691528,"BuckHashSys":5704,"Frees":214,"GCCPUFraction":0,"GCSys":1833472,"HeapAlloc":691528,"HeapIdle":2301952,"HeapInuse":1695744,"HeapObjects":6259,"HeapReleased":2301952,"HeapSys":3997696,"LastGC":0,"Lookups":0,"MCacheInuse":4672,"MCacheSys":16352,"MSpanInuse":44640,"MSpanSys":48960,"Mallocs":6473,"NextGC":4194304,"NumForcedGC":0,"NumGC":0,"OtherSys":737432,"PauseTotalNs":0,"RandomValue":0.5719,"StackInuse":196608,"StackSys":196608,"Sys":6836224,"TotalAlloc":691528},"Countmetr":{"PollCount":10}}
+{"Gaugemetr":{},"Countmetr":{}}
 

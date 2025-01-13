@@ -143,21 +143,26 @@ func run() error {
 		memStor.count["PollCount"] = counter(cunt)
 		bunch := makeBunchOfMetrics(&memStor)
 		log.Println(len(bunch))
-		
-		for name, value := range memStor.gau {
-			valStr := strconv.FormatFloat(float64(value), 'f', 4, 64)
-			err := postMetric("gauge", name, valStr)
-			if err != nil {
-				log.Println(err, "gauge", name, valStr)
-			}
+
+		err := postBunch(bunch)
+		if err != nil {
+			log.Printf("AGENT postBunch ERROR %+v\n", err)
 		}
-		for name := range memStor.count {
-			valStr := strconv.FormatInt(int64(cunt), 10)
-			err := postMetric("counter", name, valStr)
-			if err != nil {
-				log.Println(err, "counter", name, valStr)
-			}
-		}
+
+		// for name, value := range memStor.gau {
+		// 	valStr := strconv.FormatFloat(float64(value), 'f', 4, 64)
+		// 	err := postMetric("gauge", name, valStr)
+		// 	if err != nil {
+		// 		log.Println(err, "gauge", name, valStr)
+		// 	}
+		// }
+		// for name := range memStor.count {
+		// 	valStr := strconv.FormatInt(int64(cunt), 10)
+		// 	err := postMetric("counter", name, valStr)
+		// 	if err != nil {
+		// 		log.Println(err, "counter", name, valStr)
+		// 	}
+		// }
 
 	}
 }
