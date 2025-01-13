@@ -70,7 +70,7 @@ func main() {
 		return
 	}
 
-		memStor = MemStorage{
+	memStor = MemStorage{
 		Gaugemetr: make(map[string]gauge),
 		Countmetr: make(map[string]counter),
 	}
@@ -123,12 +123,8 @@ func run() error {
 
 func dbPinger(rwr http.ResponseWriter, req *http.Request) {
 
-	//db, err := sql.Open("pgx", dbEndPoint)
-
 	ctx := context.Background()
 	db, err := pgx.Connect(ctx, dbEndPoint)
-
-	//	log.Printf("Endpoint is %s\n", dbEndPoint)
 
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)

@@ -125,22 +125,7 @@ func main() {
 
 func run() error {
 	memStor := MemStorage{}
-	// err := getMetrix(&memStor)
-	// if err != nil {
-	// 	log.Println(err, "getMetrix")
-	// }
-	// bunch := makeBunchOfMetrics(&memStor)
-	// err = postBunch(bunch)
-	// if err != nil {
-	// 	log.Println(err, "postbunch")
-	// }
-	//	fmt.Printf("\n\n\nreportInterval/pollInterval %d %d\n\n\n\n", reportInterval, pollInterval)
 	for {
-		// err := getMetrix(&memStor)
-		// if err != nil {
-		// 	log.Println(err, "getMetrix")
-		// }
-		// time.Sleep(time.Duration(1) * time.Second)
 		cunt := 0
 		for i := 0; i < reportInterval/pollInterval; i++ {
 			err := getMetrix(&memStor)
@@ -158,7 +143,6 @@ func run() error {
 			log.Printf("AGENT postBunch ERROR %+v\n", err)
 		}
 	}
-	//return nil
 }
 func postBunch(bunch []Metrics) error {
 	marshalledBunch, err := json.Marshal(bunch)

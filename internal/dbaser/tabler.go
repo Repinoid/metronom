@@ -19,11 +19,9 @@ type Struct4db struct {
 	MetricBase *pgx.Conn
 }
 
-// func TableGetAllCounters(ctx context.Context, db *pgx.Conn) (map[string]int64, error) {
 func TableGetAllCounters(MetricBaseStruct *Struct4db, mappa *map[string]int64) error {
 	var inta int64
 	var str string
-	//	mappa := map[string]int64{}
 	zapros := "SELECT * FROM counter;"
 	rows, err := MetricBaseStruct.MetricBase.Query(MetricBaseStruct.Ctx, zapros)
 	if err != nil {
@@ -43,7 +41,6 @@ func TableGetAllCounters(MetricBaseStruct *Struct4db, mappa *map[string]int64) e
 func TableGetAllGauges(MetricBaseStruct *Struct4db, mappa *map[string]float64) error {
 	var flo float64
 	var str string
-	//	mappa := map[string]float64{}
 	zapros := "SELECT * FROM gauge;"
 	rows, err := MetricBaseStruct.MetricBase.Query(MetricBaseStruct.Ctx, zapros)
 	if err != nil {
@@ -137,27 +134,6 @@ func TableGetMetric(MetricBaseStruct *Struct4db, metr *Metrics) error {
 	return nil
 }
 
-// func TableGetGauge(MetricBaseStruct *Struct4db, mname string, flo *float64) error {
-// 	//var flo float64
-// 	str := "SELECT value FROM gauge WHERE metricname = $1;"
-// 	row := MetricBaseStruct.MetricBase.QueryRow(MetricBaseStruct.Ctx, str, mname)
-// 	err := row.Scan(flo)
-// 	if err != nil {
-// 		return fmt.Errorf("error get %s gauge metric.  %w", mname, err)
-// 	}
-// 	return nil
-// }
-// func TableGetCounter(MetricBaseStruct *Struct4db, mname string, inta *int64) error {
-// 	//var inta int64
-// 	str := "SELECT value FROM counter WHERE metricname = $1;"
-// 	row := MetricBaseStruct.MetricBase.QueryRow(MetricBaseStruct.Ctx, str, mname)
-// 	err := row.Scan(inta)
-// 	if err != nil {
-// 		return fmt.Errorf("error get %s counter metric.  %w", mname, err)
-// 	}
-// 	return nil
-// }
-
 type Gauge float64
 type Counter int64
 type Metrics struct {
@@ -213,7 +189,7 @@ func TableMetricWrapper(origFunc func(MetricBaseStruct *Struct4db, metr *Metrics
 				if err = origFunc(MetricBaseStruct, metr); err == nil {
 					break
 				}
-			//	fmt.Println(delay, " MetricWrapper !")
+				//	fmt.Println(delay, " MetricWrapper !")
 			}
 		}
 		return err
@@ -230,7 +206,7 @@ func TableBuncherWrapper(origFunc func(MetricBaseStruct *Struct4db, metrArray []
 				if err = origFunc(MetricBaseStruct, metrArray); err == nil {
 					break
 				}
-			//	fmt.Println(delay, " BUNCHWrapper !")
+				//	fmt.Println(delay, " BUNCHWrapper !")
 			}
 		}
 		return err
@@ -248,7 +224,7 @@ func TableGetAllsWrapper[MV MetricValueTypes](origFunc func(MetricBaseStruct *St
 				if err = origFunc(MetricBaseStruct, mappa); err == nil {
 					break
 				}
-			//	fmt.Println(delay, "TableGetAllsWrapper !")
+				//	fmt.Println(delay, "TableGetAllsWrapper !")
 			}
 		}
 		return err
