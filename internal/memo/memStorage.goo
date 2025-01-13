@@ -95,10 +95,7 @@ type MStorJSON struct {
 }
 
 func (memorial *MemStorage) UnmarshalMS(data []byte) error {
-	memor := MStorJSON{
-		Gaugemetr: make(map[string]gauge),
-		Countmetr: make(map[string]counter),
-	}
+	memor := MStorJSON{}
 	buf := bytes.NewBuffer(data)
 	memorial.Mutter.Lock()
 	err := json.NewDecoder(buf).Decode(&memor)
