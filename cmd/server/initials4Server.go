@@ -21,7 +21,6 @@ func foa4Server() error {
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		host = hoster
-		//		return nil
 	}
 	enva, exists := os.LookupEnv("STORE_INTERVAL")
 	if exists {
@@ -64,6 +63,7 @@ func foa4Server() error {
 	if hostFlag == "" {
 		return fmt.Errorf("no host parsed from arg string")
 	}
+	// if no environment variables - load from arguments
 	if _, exists := os.LookupEnv("ADDRESS"); !exists {
 		host = hostFlag
 	}
@@ -80,7 +80,6 @@ func foa4Server() error {
 		dbEndPoint = dbFlag
 	}
 	if dbEndPoint == "" {
-		//	isBase = false
 		log.Println("No base in Env variable and command line argument")
 		MetricBaseStruct.IsBase = false
 		return nil
