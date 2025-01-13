@@ -157,16 +157,18 @@ func buncheras(rwr http.ResponseWriter, req *http.Request) {
 	// 	log.Printf("%-v", err)
 	// }
 	// //-----------------------------------------------
-	err = dbaser.TableBuncher(MetricBaseStruct.Ctx, MetricBaseStruct.MetricBase, memor)
-	if err != nil {
-		log.Printf("%-v", err)
+	if MetricBaseStruct.IsBase {
+		err = dbaser.TableBuncher(MetricBaseStruct.Ctx, MetricBaseStruct.MetricBase, memor)
+		if err != nil {
+			log.Printf("%-v", err)
+		}
 	}
 
 	// for _, j := range memor {
 	// 	fmt.Printf("%+v\n", j)
 	// }
 
-	reply := struct{ Dlina int }{Dlina: len(memor)}
-	json.NewEncoder(rwr).Encode(reply)
+	//reply := struct{ Dlina int }{Dlina: len(memor)}
+	json.NewEncoder(rwr).Encode(&memor)
 
 }

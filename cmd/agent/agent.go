@@ -177,7 +177,7 @@ func postBunch(bunch []Metrics) error {
 		return err
 	}
 	httpc := resty.New() //
-	httpc.SetBaseURL("http://localhost:8080")
+	httpc.SetBaseURL("http://" + host)
 
 	httpc.SetRetryCount(3)
 	httpc.SetRetryWaitTime(1 * time.Second)    // начальное время повтора
