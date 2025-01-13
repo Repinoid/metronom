@@ -163,6 +163,18 @@ func buncheras(rwr http.ResponseWriter, req *http.Request) {
 			log.Printf("%-v", err)
 		}
 	}
+	memStor.Mutter.Lock()
+	for _, m := range memor {
+		switch m.MType {
+		case "gauge":
+			memStor.Gaugemetr[m.ID] = gauge(*m.Value)
+		case "counter":
+			memStor.Countmetr[m.ID] = counter(*m.Delta)
+		default:
+			log.Printf("wrong metric type %s\n", m.MType)
+		}
+	}
+	memStor.Mutter.Unlock()
 
 	// for _, j := range memor {
 	// 	fmt.Printf("%+v\n", j)
