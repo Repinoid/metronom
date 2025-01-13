@@ -139,6 +139,11 @@ func run() error {
 			}
 			time.Sleep(time.Duration(pollInterval) * time.Second)
 		}
+
+		memStor.count["PollCount"] = counter(cunt)
+		bunch := makeBunchOfMetrics(&memStor)
+		log.Println(len(bunch))
+		
 		for name, value := range memStor.gau {
 			valStr := strconv.FormatFloat(float64(value), 'f', 4, 64)
 			err := postMetric("gauge", name, valStr)
@@ -153,6 +158,7 @@ func run() error {
 				log.Println(err, "counter", name, valStr)
 			}
 		}
+
 	}
 }
 
