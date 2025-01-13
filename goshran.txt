@@ -1,2 +1,2 @@
-{"Gaugemetr":{},"Countmetr":{"PopulateCounter4433007":0}}
+{"Gaugemetr":{},"Countmetr":{}}
 

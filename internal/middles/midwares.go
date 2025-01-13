@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"go.uber.org/zap"
 )
@@ -35,7 +34,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 
 func WithLogging(origFunc func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	loggedFunc := func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
+		//	start := time.Now()
 		responseData := &responseData{
 			status: 0,
 			size:   0,
@@ -47,20 +46,20 @@ func WithLogging(origFunc func(w http.ResponseWriter, r *http.Request)) func(w h
 
 		origFunc(&lw, r) // обслуживание оригинального запроса
 
-		duration := time.Since(start)
+		//	duration := time.Since(start)
 		logger, err := zap.NewDevelopment()
 		if err != nil {
 			log.Println("cannot initialize zap")
 		}
 		defer logger.Sync()
 		sugar = *logger.Sugar()
-		sugar.Infoln(
-			"uri", r.RequestURI,
-			"method", r.Method,
-			"status", responseData.status, // получаем перехваченный код статуса ответа
-			"duration", duration,
-			"size", responseData.size, // получаем перехваченный размер ответа
-		)
+		// sugar.Infoln(
+		// 	"uri", r.RequestURI,
+		// 	"method", r.Method,
+		// 	"status", responseData.status, // получаем перехваченный код статуса ответа
+		// 	"duration", duration,
+		// 	"size", responseData.size, // получаем перехваченный размер ответа
+		// )
 	}
 	return loggedFunc
 }
