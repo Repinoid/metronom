@@ -169,7 +169,12 @@ func buncheras(rwr http.ResponseWriter, req *http.Request) {
 		case "gauge":
 			memStor.Gaugemetr[m.ID] = gauge(*m.Value)
 		case "counter":
+			if _, ok := memStor.Countmetr[m.ID]; ok {
+				memStor.Countmetr[m.ID] += counter(*m.Delta)
+				continue
+			}
 			memStor.Countmetr[m.ID] = counter(*m.Delta)
+
 		default:
 			log.Printf("wrong metric type %s\n", m.MType)
 		}
