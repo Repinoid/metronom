@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,6 +12,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type gauge float64
@@ -74,6 +77,7 @@ func getMetrix(memStor *MemStorage) error {
 	}
 	return nil
 }
+
 func postMetric(metricType, metricName, metricValue string) error {
 	var metr Metrics
 	switch metricType {
@@ -114,21 +118,32 @@ func postMetric(metricType, metricName, metricValue string) error {
 }
 
 func main() {
-	if err := foa4Agent(); err != nil {
-		log.Fatal("INTERVAL error ", err)
-		return
-	}
 	if err := run(); err != nil {
 		panic(err)
 	}
 }
 
 func run() error {
-	memStor := new(MemStorage)
+	memStor := MemStorage{}
+	// err := getMetrix(&memStor)
+	// if err != nil {
+	// 	log.Println(err, "getMetrix")
+	// }
+	// bunch := makeBunchOfMetrics(&memStor)
+	// err = postBunch(bunch)
+	// if err != nil {
+	// 	log.Println(err, "postbunch")
+	// }
+	//	fmt.Printf("\n\n\nreportInterval/pollInterval %d %d\n\n\n\n", reportInterval, pollInterval)
 	for {
+		// err := getMetrix(&memStor)
+		// if err != nil {
+		// 	log.Println(err, "getMetrix")
+		// }
+		// time.Sleep(time.Duration(1) * time.Second)
 		cunt := 0
 		for i := 0; i < reportInterval/pollInterval; i++ {
-			err := getMetrix(memStor)
+			err := getMetrix(&memStor)
 			if err != nil {
 				log.Println(err, "getMetrix")
 			} else {
@@ -136,19 +151,79 @@ func run() error {
 			}
 			time.Sleep(time.Duration(pollInterval) * time.Second)
 		}
-		for name, value := range memStor.gau {
-			valStr := strconv.FormatFloat(float64(value), 'f', 4, 64)
-			err := postMetric("gauge", name, valStr)
-			if err != nil {
-				log.Println(err, "gauge", name, valStr)
-			}
-		}
-		for name := range memStor.count {
-			valStr := strconv.FormatInt(int64(cunt), 10)
-			err := postMetric("counter", name, valStr)
-			if err != nil {
-				log.Println(err, "counter", name, valStr)
-			}
+		memStor.count["PollCount"] = counter(cunt)
+		bunch := makeBunchOfMetrics(&memStor)
+		err := postBunch(bunch)
+		if err != nil {
+			log.Printf("AGENT postBunch ERROR %+v\n", err)
 		}
 	}
+	//return nil
+}
+func postBunch(bunch []Metrics) error {
+	marshalledBunch, err := json.Marshal(bunch)
+	if err != nil {
+		return err
+	}
+	compressedBunch, err := pack2gzip(marshalledBunch)
+	if err != nil {
+		return err
+	}
+	httpc := resty.New() //
+	httpc.SetBaseURL("http://localhost:8080")
+
+	httpc.SetRetryCount(3)
+	httpc.SetRetryWaitTime(1 * time.Second)    // начальное время повтора
+	httpc.SetRetryMaxWaitTime(9 * time.Second) // 1+3+5
+	tn := time.Now()                           // -------------
+	httpc.SetRetryAfter(func(client *resty.Client, resp *resty.Response) (time.Duration, error) {
+		rwt := client.RetryWaitTime
+		fmt.Printf("waittime \t%+v\t time %+v  count %d\n", rwt, time.Since(tn), client.RetryCount) // -------
+		client.SetRetryWaitTime(rwt + 2*time.Second)
+		tn = time.Now() // ----------------
+		return client.RetryWaitTime, nil
+	})
+
+	req := httpc.R().
+		SetHeader("Content-Encoding", "gzip").
+		SetBody(compressedBunch).
+		SetHeader("Accept-Encoding", "gzip")
+
+	_, err = req.
+		SetDoNotParseResponse(false).
+		Post("/updates/")
+
+		//	log.Printf("%+v\n", resp)
+
+	return err
+}
+
+func makeBunchOfMetrics(memStor *MemStorage) []Metrics {
+	metrArray := make([]Metrics, 0, len(memStor.gau)+len(memStor.count))
+
+	for metrName, metrValue := range memStor.count {
+		mval := int64(metrValue)
+		metr := Metrics{ID: metrName, MType: "counter", Delta: &mval}
+		metrArray = append(metrArray, metr)
+	}
+	for metrName, metrValue := range memStor.gau {
+		mval := float64(metrValue)
+		metr := Metrics{ID: metrName, MType: "gauge", Value: &mval}
+		metrArray = append(metrArray, metr)
+	}
+	return metrArray
+}
+
+func pack2gzip(data2pack []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+	//	zw.ModTime = time.Now()
+	_, err := zw.Write(data2pack)
+	if err != nil {
+		return nil, fmt.Errorf("gzip.NewWriter.Write %w ", err)
+	}
+	if err := zw.Close(); err != nil {
+		return nil, fmt.Errorf("gzip.NewWriter.Close %w ", err)
+	}
+	return buf.Bytes(), nil
 }
