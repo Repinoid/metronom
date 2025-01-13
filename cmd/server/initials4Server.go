@@ -82,6 +82,7 @@ func foa4Server() error {
 	if dbEndPoint == "" {
 		//	isBase = false
 		log.Println("No base in Env variable and command line argument")
+		MetricBaseStruct.IsBase = false
 		return nil
 	}
 	ctx := context.Background()
