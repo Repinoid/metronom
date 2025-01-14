@@ -26,12 +26,12 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	}
 	if MetricBaseStruct.IsBase {
 		mGauge := map[string]float64{}
-		err := dbaser.TableGetAllsWrapper(dbaser.TableGetAllGauges)(&MetricBaseStruct, &mGauge)
+		err := dbaser.TableGetAllsWrapper(dbaser.TableGetAllMetrics[float64])(&MetricBaseStruct, &mGauge)
 		if err != nil {
 			log.Printf("bad allgauges\n %v\n", err)
 		}
 		mCounter := map[string]int64{}
-		err = dbaser.TableGetAllsWrapper(dbaser.TableGetAllCounters)(&MetricBaseStruct, &mCounter)
+		err = dbaser.TableGetAllsWrapper(dbaser.TableGetAllMetrics[int64])(&MetricBaseStruct, &mCounter)
 		if err != nil {
 			log.Printf("bad allcounters\n %v\n", err)
 		}
@@ -66,7 +66,6 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	case "counter":
 		var cunt counter
 		if memo.GetCounterValue(&memStor, MetricBaseStruct, metricName, &cunt) != nil {
-			//	if memStor.GetCounterValue(metricName, &cunt) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(rwr, nil)
 			return
@@ -75,7 +74,6 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	case "gauge":
 		var gaaga gauge
 		if memo.GetGaugeValue(&memStor, MetricBaseStruct, metricName, &gaaga) != nil {
-			//	if memStor.GetGaugeValue(metricName, &gaaga) != nil {
 			rwr.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(rwr, nil)
 			return
@@ -91,7 +89,6 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 
 func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 
-	//log.Printf("%v\nisBase - %v\ncheck - %v\n\n\n", MetricBase.MetricBase, isBase, check)
 
 	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
@@ -111,7 +108,6 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 			return
 		}
-		//	memStor.AddCounter(metricName, counter(value))
 		memo.AddCounter(&memStor, MetricBaseStruct, metricName, counter(value))
 	case "gauge":
 		value, err := strconv.ParseFloat(metricValue, 64)
@@ -120,7 +116,6 @@ func treatMetric(rwr http.ResponseWriter, req *http.Request) {
 			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 			return
 		}
-		//	memStor.AddGauge(metricName, gauge(value))
 		memo.AddGauge(&memStor, MetricBaseStruct, metricName, gauge(value))
 	default:
 		rwr.WriteHeader(http.StatusBadRequest)
