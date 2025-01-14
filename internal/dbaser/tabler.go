@@ -18,11 +18,9 @@ type Struct4db struct {
 	MetricBase *pgx.Conn
 }
 
-// func TableGetAllCounters(ctx context.Context, db *pgx.Conn) (map[string]int64, error) {
 func TableGetAllCounters(MetricBaseStruct *Struct4db, mappa *map[string]int64) error {
 	var inta int64
 	var str string
-	//	mappa := map[string]int64{}
 	zapros := "SELECT * FROM counter;"
 	rows, err := MetricBaseStruct.MetricBase.Query(MetricBaseStruct.Ctx, zapros)
 	if err != nil {
@@ -42,7 +40,6 @@ func TableGetAllCounters(MetricBaseStruct *Struct4db, mappa *map[string]int64) e
 func TableGetAllGauges(MetricBaseStruct *Struct4db, mappa *map[string]float64) error {
 	var flo float64
 	var str string
-	//	mappa := map[string]float64{}
 	zapros := "SELECT * FROM gauge;"
 	rows, err := MetricBaseStruct.MetricBase.Query(MetricBaseStruct.Ctx, zapros)
 	if err != nil {
@@ -74,7 +71,6 @@ func TableCreation(MetricBaseStruct *Struct4db) error {
 	return nil
 }
 
-// func TablePutCounter(MetricBaseStruct *Struct4db, mname string, value int64) error {
 func TablePutCounter(MetricBaseStruct *Struct4db, metr *Metrics) error {
 	order := fmt.Sprintf("INSERT INTO Counter(metricname, value) VALUES ('%[1]s',%[2]d);", metr.ID, *metr.Delta)
 	tag1, err := MetricBaseStruct.MetricBase.Exec(MetricBaseStruct.Ctx, order)
