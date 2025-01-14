@@ -145,7 +145,8 @@ func buncheras(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if MetricBaseStruct.IsBase {
-		err = dbaser.TableBuncher(MetricBaseStruct.Ctx, MetricBaseStruct.MetricBase, memor)
+		err = dbaser.TableBuncherWrapper(dbaser.TableBuncher)(&MetricBaseStruct, memor)
+//		err = dbaser.TableBuncher(MetricBaseStruct.Ctx, MetricBaseStruct.MetricBase, memor)
 		if err != nil {
 			log.Printf("%-v", err)
 		}

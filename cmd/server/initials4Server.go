@@ -90,7 +90,8 @@ func foa4Server() error {
 		log.Printf("Can't connect to DB %s\n", dbEndPoint)
 		return nil
 	}
-	err = dbaser.TableCreation(ctx, MetricBaseStruct.MetricBase)
+	err = dbaser.TableCreation(&MetricBaseStruct)
+	//	err = dbaser.TableCreation(ctx, MetricBaseStruct.MetricBase)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create tables: %v\n", err)
 		return nil
