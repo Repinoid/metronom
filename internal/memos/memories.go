@@ -16,7 +16,7 @@ import (
 type MemoryStorageStruct struct {
 	Gaugemetr map[string]models.Gauge
 	Countmetr map[string]models.Counter
-	mutter    sync.RWMutex
+	mutter    *sync.RWMutex
 }
 type Metrics = models.Metrics
 
@@ -107,7 +107,7 @@ type MStorJSON struct {
 	Countmetr map[string]models.Counter
 }
 
-func UnmarshalMS(memorial MemoryStorageStruct, data []byte) error {
+func UnmarshalMS(memorial *MemoryStorageStruct, data []byte) error {
 	memor := MStorJSON{
 		Gaugemetr: make(map[string]gauge),
 		Countmetr: make(map[string]counter),
@@ -141,7 +141,7 @@ func (memorial MemoryStorageStruct) LoadMS(fnam string) error {
 	if err != nil {
 		return fmt.Errorf("file %s Read error %v", fnam, err)
 	}
-	err = UnmarshalMS(memorial, data)
+	err = UnmarshalMS(&memorial, data)
 	if err != nil {
 		return fmt.Errorf(" Memstorage UnMarshal error %v", err)
 	}
