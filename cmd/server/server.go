@@ -15,6 +15,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sync"
 
 	"gorono/internal/basis"
 	"gorono/internal/memos"
@@ -38,6 +39,8 @@ var ctx context.Context
 var memStor memos.MemoryStorageStruct // 	in memory Storage
 var dbStorage basis.DBstruct          // 	Data Base Storage
 var inter models.Inter                // 	= memStor OR dbStorage
+
+var synca sync.RWMutex
 
 func main() {
 	if err := InitServer(); err != nil {
