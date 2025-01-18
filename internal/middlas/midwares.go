@@ -1,4 +1,4 @@
-package middles
+package middlas
 
 import (
 	"compress/gzip"
@@ -33,7 +33,8 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode // захватываем код статуса
 }
 
-func WithLogging(origFunc func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+// func WithLogging(origFunc func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+func WithLogging(next http.Handler) http.Handler {
 	loggedFunc := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		responseData := &responseData{
@@ -44,8 +45,8 @@ func WithLogging(origFunc func(w http.ResponseWriter, r *http.Request)) func(w h
 			ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
 			responseData:   responseData,
 		}
-
-		origFunc(&lw, r) // обслуживание оригинального запроса
+		next.ServeHTTP(&lw, r)
+		//		origFunc(&lw, r) // обслуживание оригинального запроса
 
 		duration := time.Since(start)
 		logger, err := zap.NewDevelopment()
@@ -62,7 +63,7 @@ func WithLogging(origFunc func(w http.ResponseWriter, r *http.Request)) func(w h
 			"size", responseData.size, // получаем перехваченный размер ответа
 		)
 	}
-	return loggedFunc
+	return http.HandlerFunc(loggedFunc)
 }
 
 type gzipWriter struct {

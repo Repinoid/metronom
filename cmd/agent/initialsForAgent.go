@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func foa4Agent() error {
+func initAgent() error {
 	enva, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		host = enva
