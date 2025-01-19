@@ -128,7 +128,7 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func DbPinger(rwr http.ResponseWriter, req *http.Request) {
+func DBPinger(rwr http.ResponseWriter, req *http.Request) {
 
 	err := inter.Ping(ctx)
 	if err != nil {

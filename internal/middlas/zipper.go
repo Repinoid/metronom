@@ -34,6 +34,6 @@ func UnpackFromGzip(data2unpack io.Reader) (io.Reader, error) {
 }
 
 func Ptr[PP int64 | float64](w PP) *PP {
-	var i PP = w
+	i := w
 	return &i
 }
