@@ -7,11 +7,12 @@ import (
 	"gorono/internal/basis"
 	"gorono/internal/models"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
 
-func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
+func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
 	telo, err := io.ReadAll(req.Body)
@@ -44,7 +45,7 @@ func getJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 }
 
-func putJSONMetric(rwr http.ResponseWriter, req *http.Request) {
+func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
 	telo, err := io.ReadAll(req.Body)
@@ -65,19 +66,22 @@ func putJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 
 	if !models.IsMetricsOK(metr) {
 		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, "bad metric %+v\n", metr)
+		log.Printf("bad Metric %+v\n", metr)
+		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
 	err = basis.PutMetricWrapper(inter.PutMetric)(ctx, &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+		log.Printf("PutMetricWrapper %+v\n", metr)
+		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
 	metrix := Metrics{ID: metr.ID, MType: metr.MType}
 	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metrix) //inter.GetMetric(ctx, &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
+		log.Printf("GetMetricWrapper %+v\n", metr)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
@@ -89,7 +93,7 @@ func putJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func buncheras(rwr http.ResponseWriter, req *http.Request) {
+func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)

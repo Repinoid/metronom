@@ -11,13 +11,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func badPost(rwr http.ResponseWriter, req *http.Request) {
+func BadPost(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
 	rwr.WriteHeader(http.StatusNotFound)
 	fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 }
 
-func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
+func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
 	if req.URL.Path != "/" { // if GET with wrong arguments structure
 		rwr.WriteHeader(http.StatusBadRequest)
@@ -47,7 +47,7 @@ func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func getMetric(rwr http.ResponseWriter, req *http.Request) {
+func GetMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
 	metricType := vars["metricType"]
@@ -73,7 +73,7 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func putMetric(rwr http.ResponseWriter, req *http.Request) {
+func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 
 	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
@@ -128,7 +128,7 @@ func putMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func dbPinger(rwr http.ResponseWriter, req *http.Request) {
+func DbPinger(rwr http.ResponseWriter, req *http.Request) {
 
 	err := inter.Ping(ctx)
 	if err != nil {

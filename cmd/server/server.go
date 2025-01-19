@@ -39,8 +39,8 @@ var sugar zap.SugaredLogger
 
 var ctx context.Context
 var memStor *memos.MemoryStorageStruct // 	in memory Storage
-var dbStorage basis.DBstruct          // 	Data Base Storage
-var inter models.Inter                // 	= memStor OR dbStorage
+var dbStorage basis.DBstruct           // 	Data Base Storage
+var inter models.Inter                 // 	= memStor OR dbStorage
 
 func main() {
 	if err := InitServer(); err != nil {
@@ -65,14 +65,14 @@ func main() {
 func run() error {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", putMetric).Methods("POST")
-	router.HandleFunc("/update/", putJSONMetric).Methods("POST")
-	router.HandleFunc("/updates/", buncheras).Methods("POST")
-	router.HandleFunc("/value/{metricType}/{metricName}", getMetric).Methods("GET")
-	router.HandleFunc("/value/", getJSONMetric).Methods("POST")
-	router.HandleFunc("/", getAllMetrix).Methods("GET")
-	router.HandleFunc("/", badPost).Methods("POST") // if POST with wrong arguments structure
-	router.HandleFunc("/ping", dbPinger).Methods("GET")
+	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", PutMetric).Methods("POST")
+	router.HandleFunc("/update/", PutJSONMetric).Methods("POST")
+	router.HandleFunc("/updates/", Buncheras).Methods("POST")
+	router.HandleFunc("/value/{metricType}/{metricName}", GetMetric).Methods("GET")
+	router.HandleFunc("/value/", GetJSONMetric).Methods("POST")
+	router.HandleFunc("/", GetAllMetrix).Methods("GET")
+	router.HandleFunc("/", BadPost).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/ping", DbPinger).Methods("GET")
 
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
