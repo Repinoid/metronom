@@ -62,10 +62,10 @@ func getMetric(rwr http.ResponseWriter, req *http.Request) {
 	switch metricType {
 	case "gauge":
 		rwr.WriteHeader(http.StatusOK)
-		fmt.Fprint(rwr, *metr.Value)
+		fmt.Fprintf(rwr, `{"%s":"%g"}`, metricName, *metr.Value)
 	case "counter":
 		rwr.WriteHeader(http.StatusOK)
-		fmt.Fprint(rwr, *metr.Delta)
+		fmt.Fprintf(rwr, `{"%s":"%d"}`, metricName, *metr.Delta)
 	default:
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"wrong metric type":"%s"}`, metricType)
@@ -119,12 +119,12 @@ func putMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.WriteHeader(http.StatusOK)
 	switch metr.MType {
 	case "gauge":
-		fmt.Fprint(rwr, *metr.Value)
+		fmt.Fprintf(rwr, `{"%s udpated to":"%g"}`, metr.ID, *metr.Value)
 	case "counter":
-		fmt.Fprint(rwr, *metr.Delta)
+		fmt.Fprintf(rwr, `{"%s udpated to":"%d"}`, metr.ID, *metr.Delta)
 	}
 	if storeInterval == 0 {
-		_ = inter.SaveMS(fileStorePath)
+		_ = memStor.SaveMS(fileStorePath)
 	}
 }
 

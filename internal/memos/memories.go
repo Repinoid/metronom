@@ -21,6 +21,9 @@ type MemoryStorageStruct struct {
 type Metrics = models.Metrics
 
 func (memorial MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics) error {
+	if !models.IsMetricsOK(*metr) {
+		return fmt.Errorf("bad metric %+v", metr)
+	}
 	memorial.Mutter.Lock()
 	defer memorial.Mutter.Unlock()
 	switch metr.MType {
@@ -29,7 +32,7 @@ func (memorial MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics
 	case "counter":
 		memorial.Countmetr[metr.ID] += models.Counter(*metr.Delta)
 	default:
-		return fmt.Errorf("wrong metric %+v", metr)
+		return fmt.Errorf("wrong type %s", metr.MType)
 	}
 	return nil
 }
@@ -37,25 +40,26 @@ func (memorial MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics
 func (memorial MemoryStorageStruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics, error) {
 	memorial.Mutter.RLock() // <---- MUTEX
 	defer memorial.Mutter.RUnlock()
+	metrix := Metrics{ID: metr.ID, MType: metr.MType} // new pure Metrics to return, nil Delta&Value ptrs
 	switch metr.MType {
 	case "gauge":
 		if val, ok := memorial.Gaugemetr[metr.ID]; ok {
 			out := float64(val)
-			metr.Value = &out
+			metrix.Value = &out
 			break
 		}
-		return *metr, fmt.Errorf("no metric %+v", metr)
+		return metrix, fmt.Errorf("unknown metric %+v", metr) //
 	case "counter":
 		if val, ok := memorial.Countmetr[metr.ID]; ok {
 			out := int64(val)
-			metr.Delta = &out
+			metrix.Delta = &out
 			break
 		}
-		return *metr, fmt.Errorf("no metric %+v", metr)
+		return metrix, fmt.Errorf("unknown metric %+v", metr)
 	default:
-		return *metr, fmt.Errorf("wrong metric %+v", metr)
+		return metrix, fmt.Errorf("wrong type %s", metr.MType)
 	}
-	return *metr, nil
+	return metrix, nil
 }
 
 // --- from []Metrics to memory Storage
@@ -107,7 +111,7 @@ type MStorJSON struct {
 	Countmetr map[string]models.Counter
 }
 
-func UnmarshalMS(memorial *MemoryStorageStruct, data []byte) error {
+func (memorial *MemoryStorageStruct) UnmarshalMS(data []byte) error {
 	memor := MStorJSON{
 		Gaugemetr: make(map[string]gauge),
 		Countmetr: make(map[string]counter),
@@ -131,7 +135,7 @@ func MarshalMS(memorial *MemoryStorageStruct) ([]byte, error) {
 	return append(buf.Bytes(), '\n'), err
 }
 
-func (memorial MemoryStorageStruct) LoadMS(fnam string) error {
+func (memorial *MemoryStorageStruct) LoadMS(fnam string) error {
 	phil, err := os.OpenFile(fnam, os.O_RDONLY, 0666)
 	if err != nil {
 		return fmt.Errorf("file %s Open error %v", fnam, err)
@@ -141,18 +145,18 @@ func (memorial MemoryStorageStruct) LoadMS(fnam string) error {
 	if err != nil {
 		return fmt.Errorf("file %s Read error %v", fnam, err)
 	}
-	err = UnmarshalMS(&memorial, data)
+	err = memorial.UnmarshalMS(data)
 	if err != nil {
 		return fmt.Errorf(" Memstorage UnMarshal error %v", err)
 	}
 	return nil
 }
-func (memorial MemoryStorageStruct) SaveMS(fnam string) error {
+func (memorial *MemoryStorageStruct) SaveMS(fnam string) error {
 	phil, err := os.OpenFile(fnam, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return fmt.Errorf("file %s Open error %v", fnam, err)
 	}
-	march, err := MarshalMS(&memorial)
+	march, err := MarshalMS(memorial)
 	if err != nil {
 		return fmt.Errorf(" Memstorage Marshal error %v", err)
 	}

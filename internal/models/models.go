@@ -19,13 +19,14 @@ type Inter interface {
 	GetAllMetrics(ctx context.Context) (*[]Metrics, error)
 	PutAllMetrics(ctx context.Context, metras *[]Metrics) error
 	Ping(ctx context.Context) error
-	LoadMS(fnam string) error
-	SaveMS(fnam string) error
-	Saver(fnam string, storeInterval int) error
+	//	LoadMS(fnam string) error
+	//SaveMS(fnam string) error
+	//Saver(fnam string, storeInterval int) error
 }
 
 func IsMetricsOK(metr Metrics) bool {
-	if (metr.MType == "counter" && metr.Delta == nil) ||
+	if (metr.MType != "gauge" && metr.MType != "counter") ||
+		(metr.MType == "counter" && metr.Delta == nil) ||
 		(metr.MType == "gauge" && metr.Value == nil) ||
 		(metr.Delta != nil && metr.Value != nil) {
 		return false

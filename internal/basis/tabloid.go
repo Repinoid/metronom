@@ -46,7 +46,7 @@ func (dataBase DBstruct) PutMetric(ctx context.Context, metr *Metrics) error {
 		order += "ON CONFLICT (metricname) DO UPDATE SET metricname=args.metricname, value=args.value+EXCLUDED.value;"
 		// args.value - старое значение. EXCLUDED.value - новое, переданное для вставки или обновления
 	default:
-		return fmt.Errorf("wrong metric type \"%s\"", metr.MType)
+		return fmt.Errorf("wrong type %s", metr.MType)
 	}
 	_, err := db.Exec(ctx, order)
 	if err != nil {
@@ -58,6 +58,7 @@ func (dataBase DBstruct) PutMetric(ctx context.Context, metr *Metrics) error {
 // ------ get ONE metric from the table
 func (dataBase DBstruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics, error) {
 	db := dataBase.DB
+	metrix := Metrics{ID: metr.ID, MType: metr.MType} // new pure Metrics to return, nil Delta & Value ptrs
 	switch metr.MType {
 	case "gauge":
 		var flo float64 // here we scan Value
@@ -65,22 +66,22 @@ func (dataBase DBstruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics,
 		row := db.QueryRow(ctx, order, metr.ID)
 		err := row.Scan(&flo)
 		if err != nil {
-			return *metr, fmt.Errorf("error get %s gauge metric.  %w", metr.ID, err)
+			return *metr, fmt.Errorf("unknown metric %+v", metr)
 		}
-		metr.Value = &flo
+		metrix.Value = &flo
 	case "counter":
 		var inta int64 // here we scan Delta
 		order := "SELECT value FROM counter WHERE metricname = $1;"
 		row := db.QueryRow(ctx, order, metr.ID)
 		err := row.Scan(&inta)
 		if err != nil {
-			return *metr, fmt.Errorf("error get %s counter metric.  %w", metr.ID, err)
+			return *metr, fmt.Errorf("unknown metric %+v", metr)
 		}
-		metr.Delta = &inta
+		metrix.Delta = &inta
 	default:
-		return *metr, fmt.Errorf("wrong metric type \"%s\"", metr.MType)
+		return *metr, fmt.Errorf("wrong type %s", metr.MType)
 	}
-	return *metr, nil
+	return metrix, nil
 }
 
 // ----------- transaction. PUT ALL metrics to the tables ----------------------

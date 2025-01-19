@@ -79,24 +79,19 @@ func InitServer() error {
 	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
 		dbEndPoint = dbFlag
 	}
-
+	memStor = &MemStorage{
+		Gaugemetr: make(map[string]gauge),
+		Countmetr: make(map[string]counter),
+		Mutter:    &mtx,
+	}
 	if dbEndPoint == "" {
 		log.Println("No base in Env variable and command line argument")
-		memStor = MemStorage{
-			Gaugemetr: make(map[string]gauge),
-			Countmetr: make(map[string]counter),
-			Mutter:    &synca,
-		}
 		inter = memStor // если базы нет, подключаем in memory Storage
 		return nil
 	}
 	ctx = context.Background()
 	err := startDB(ctx, dbEndPoint)
 	if err != nil {
-		memStor = MemStorage{
-			Gaugemetr: make(map[string]gauge),
-			Countmetr: make(map[string]counter),
-		}
 		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
 		log.Printf("Can't connect to DB %s\n", dbEndPoint)
 		return nil

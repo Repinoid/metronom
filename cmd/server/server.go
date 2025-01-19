@@ -32,15 +32,15 @@ type counter = models.Counter
 type Metrics = memos.Metrics
 type MemStorage = memos.MemoryStorageStruct
 
+var mtx sync.RWMutex
+
 var host = "localhost:8080"
 var sugar zap.SugaredLogger
 
 var ctx context.Context
-var memStor memos.MemoryStorageStruct // 	in memory Storage
+var memStor *memos.MemoryStorageStruct // 	in memory Storage
 var dbStorage basis.DBstruct          // 	Data Base Storage
 var inter models.Inter                // 	= memStor OR dbStorage
-
-var synca sync.RWMutex
 
 func main() {
 	if err := InitServer(); err != nil {
@@ -49,11 +49,11 @@ func main() {
 	}
 
 	if reStore {
-		_ = inter.LoadMS(fileStorePath)
+		_ = memStor.LoadMS(fileStorePath)
 	}
 
 	if storeInterval > 0 {
-		go inter.Saver(fileStorePath, storeInterval)
+		go memStor.Saver(fileStorePath, storeInterval)
 	}
 
 	if err := run(); err != nil {
@@ -66,7 +66,7 @@ func run() error {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", putMetric).Methods("POST")
-	router.HandleFunc("/update/", treatJSONMetric).Methods("POST")
+	router.HandleFunc("/update/", putJSONMetric).Methods("POST")
 	router.HandleFunc("/updates/", buncheras).Methods("POST")
 	router.HandleFunc("/value/{metricType}/{metricName}", getMetric).Methods("GET")
 	router.HandleFunc("/value/", getJSONMetric).Methods("POST")
