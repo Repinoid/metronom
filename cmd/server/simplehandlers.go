@@ -6,7 +6,6 @@ import (
 	"gorono/internal/models"
 	"net/http"
 	"strconv"
-	"sync"
 
 	"github.com/gorilla/mux"
 )
@@ -24,9 +23,6 @@ func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	var mutter sync.RWMutex
-	mutter.RLock() // <---- MUTEX
-	defer mutter.RUnlock()
 
 	metras, err := basis.GetAllMetricsWrapper(inter.GetAllMetrics)(ctx)
 	if err != nil {
