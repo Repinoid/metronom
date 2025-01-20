@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
+	"go.uber.org/zap"
 )
 
 var storeInterval = 300
@@ -18,6 +19,13 @@ var reStore = true
 var dbEndPoint = ""
 
 func InitServer() error {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic("cannot initialize zap")
+	}
+	defer logger.Sync()
+	sugar = *logger.Sugar()
+
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		host = hoster
@@ -89,8 +97,9 @@ func InitServer() error {
 		inter = memStor // если базы нет, подключаем in memory Storage
 		return nil
 	}
+	dbStorage = &basis.DBstruct{}
 	ctx = context.Background()
-	err := startDB(ctx, dbEndPoint)
+	err = startDB(ctx, dbEndPoint)
 	if err != nil {
 		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
 		log.Printf("Can't connect to DB %s\n", dbEndPoint)

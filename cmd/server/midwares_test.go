@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"gorono/internal/middlas"
@@ -13,9 +14,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func Test_gzipPutGet(t *testing.T) {
+	initForTests()
 	type want struct {
 		code     int
 		response string
@@ -117,15 +120,13 @@ func Test_gzipPutGet(t *testing.T) {
 			},
 		},
 	}
-	if err := InitServer(); err != nil {
-		log.Println(err, " no success for foa4Server() ")
-		return
-	}
+	 
+	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var march []byte
 			if tt.name == "BUNCH" {
-				march, _ = json.Marshal(tt.metras)	// []Metrics
+				march, _ = json.Marshal(tt.metras) // []Metrics
 			} else {
 				march, _ = json.Marshal(tt.metr)
 			}
@@ -177,4 +178,33 @@ func thecap(rwr http.ResponseWriter, req *http.Request) { // хандлер дл
 		return
 	}
 	rwr.Write(telo)
+}
+
+func initForTests() {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic("cannot initialize zap")
+	}
+	defer logger.Sync()
+	sugar = *logger.Sugar()
+
+	memStor = &MemStorage{
+		Gaugemetr: make(map[string]gauge),
+		Countmetr: make(map[string]counter),
+		Mutter:    &mtx,
+	}
+
+	if dbEndPoint == "" {
+		log.Println("No base in Env variable and command line argument")
+		inter = memStor // если базы нет, подключаем in memory Storage
+		return
+	}
+	ctx = context.Background()
+	err = startDB(ctx, dbEndPoint)
+	if err != nil {
+		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
+		log.Printf("Can't connect to DB %s\n", dbEndPoint)
+		return
+	}
+	inter = dbStorage
 }

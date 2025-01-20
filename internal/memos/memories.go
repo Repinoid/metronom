@@ -20,7 +20,7 @@ type MemoryStorageStruct struct {
 }
 type Metrics = models.Metrics
 
-func (memorial MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics) error {
+func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics) error {
 	if !models.IsMetricsOK(*metr) {
 		return fmt.Errorf("bad metric %+v", metr)
 	}
@@ -37,7 +37,7 @@ func (memorial MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics
 	return nil
 }
 
-func (memorial MemoryStorageStruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics, error) {
+func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics, error) {
 	memorial.Mutter.RLock() // <---- MUTEX
 	defer memorial.Mutter.RUnlock()
 	metrix := Metrics{ID: metr.ID, MType: metr.MType} // new pure Metrics to return, nil Delta&Value ptrs
@@ -63,7 +63,7 @@ func (memorial MemoryStorageStruct) GetMetric(ctx context.Context, metr *Metrics
 }
 
 // --- from []Metrics to memory Storage
-func (memorial MemoryStorageStruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) error {
+func (memorial *MemoryStorageStruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) error {
 	memorial.Mutter.Lock()
 	defer memorial.Mutter.Unlock()
 
@@ -85,7 +85,7 @@ func (memorial MemoryStorageStruct) PutAllMetrics(ctx context.Context, metras *[
 }
 
 // ----- from Memory Storage to []Metrics
-func (memorial MemoryStorageStruct) GetAllMetrics(ctx context.Context) (*[]Metrics, error) {
+func (memorial *MemoryStorageStruct) GetAllMetrics(ctx context.Context) (*[]Metrics, error) {
 
 	memorial.Mutter.RLock()
 	defer memorial.Mutter.RUnlock()
@@ -124,7 +124,7 @@ func (memorial *MemoryStorageStruct) UnmarshalMS(data []byte) error {
 	memorial.Mutter.Unlock()
 	return err
 }
-func MarshalMS(memorial *MemoryStorageStruct) ([]byte, error) {
+func (memorial *MemoryStorageStruct) MarshalMS() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	memorial.Mutter.RLock()
 	err := json.NewEncoder(buf).Encode(MStorJSON{
@@ -156,7 +156,7 @@ func (memorial *MemoryStorageStruct) SaveMS(fnam string) error {
 	if err != nil {
 		return fmt.Errorf("file %s Open error %v", fnam, err)
 	}
-	march, err := MarshalMS(memorial)
+	march, err := memorial.MarshalMS()
 	if err != nil {
 		return fmt.Errorf(" Memstorage Marshal error %v", err)
 	}
@@ -167,7 +167,7 @@ func (memorial *MemoryStorageStruct) SaveMS(fnam string) error {
 	return nil
 }
 
-func (memorial MemoryStorageStruct) Saver(fnam string, storeInterval int) error {
+func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error {
 	for {
 		time.Sleep(time.Duration(storeInterval) * time.Second)
 		err := memorial.SaveMS(fnam)
@@ -176,6 +176,6 @@ func (memorial MemoryStorageStruct) Saver(fnam string, storeInterval int) error 
 		}
 	}
 }
-func (memorial MemoryStorageStruct) Ping(ctx context.Context) error {
+func (memorial *MemoryStorageStruct) Ping(ctx context.Context) error {
 	return fmt.Errorf(" Skotobaza closed")
 }
