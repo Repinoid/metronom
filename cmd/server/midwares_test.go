@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"gorono/internal/middlas"
@@ -14,11 +13,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func Test_gzipPutGet(t *testing.T) {
-	initForTests()
+	//initForTests()
+	InitServer()
 	type want struct {
 		code     int
 		response string
@@ -120,8 +119,7 @@ func Test_gzipPutGet(t *testing.T) {
 			},
 		},
 	}
-	 
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var march []byte
@@ -177,34 +175,35 @@ func thecap(rwr http.ResponseWriter, req *http.Request) { // хандлер дл
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
+	defer req.Body.Close()
 	rwr.Write(telo)
 }
 
-func initForTests() {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic("cannot initialize zap")
-	}
-	defer logger.Sync()
-	sugar = *logger.Sugar()
+// func initForTests() {
+// 	logger, err := zap.NewDevelopment()
+// 	if err != nil {
+// 		panic("cannot initialize zap")
+// 	}
+// 	defer logger.Sync()
+// 	sugar = *logger.Sugar()
 
-	memStor = &MemStorage{
-		Gaugemetr: make(map[string]gauge),
-		Countmetr: make(map[string]counter),
-		Mutter:    &mtx,
-	}
+// 	memStor = &MemStorage{
+// 		Gaugemetr: make(map[string]gauge),
+// 		Countmetr: make(map[string]counter),
+// 		Mutter:    &mtx,
+// 	}
 
-	if dbEndPoint == "" {
-		log.Println("No base in Env variable and command line argument")
-		inter = memStor // если базы нет, подключаем in memory Storage
-		return
-	}
-	ctx = context.Background()
-	err = startDB(ctx, dbEndPoint)
-	if err != nil {
-		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
-		log.Printf("Can't connect to DB %s\n", dbEndPoint)
-		return
-	}
-	inter = dbStorage
-}
+// 	if dbEndPoint == "" {
+// 		log.Println("No base in Env variable and command line argument")
+// 		inter = memStor // если базы нет, подключаем in memory Storage
+// 		return
+// 	}
+// 	ctx = context.Background()
+// 	err = startDB(ctx, dbEndPoint)
+// 	if err != nil {
+// 		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
+// 		log.Printf("Can't connect to DB %s\n", dbEndPoint)
+// 		return
+// 	}
+// 	inter = dbStorage
+// }

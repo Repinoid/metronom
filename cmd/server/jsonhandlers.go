@@ -15,12 +15,13 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
 	telo, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest) // с некорректным типом метрики или значением возвращать http.StatusBadRequest.
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
+	defer req.Body.Close()
+
 	metr := Metrics{}
 	err = json.Unmarshal([]byte(telo), &metr)
 	if err != nil {
@@ -48,12 +49,12 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
 	telo, err := io.ReadAll(req.Body)
-	defer req.Body.Close()
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest) // с некорректным типом метрики или значением возвращать http.StatusBadRequest.
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
+	defer req.Body.Close()
 
 	metr := Metrics{}
 	err = json.Unmarshal([]byte(telo), &metr)
@@ -99,6 +100,8 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		return
 	}
+	defer req.Body.Close()
+
 	buf := bytes.NewBuffer(telo)
 	metras := []models.Metrics{}
 	err = json.NewDecoder(buf).Decode(&metras)
