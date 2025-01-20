@@ -24,9 +24,6 @@ import (
 	"go.uber.org/zap"
 )
 
-//type gauge = models.Gauge
-//type counter = models.Counter
-
 type Metrics = memos.Metrics
 type MemStorage = memos.MemoryStorageStruct
 
@@ -34,10 +31,6 @@ var host = "localhost:8080"
 var sugar zap.SugaredLogger
 
 var ctx context.Context
-
-//var dbStorage *basis.DBstruct // 	Data Base Storage
-
-//var memStor *memos.MemoryStorageStruct // 	in memory Storage
 
 var inter models.Inter // 	= memStor OR dbStorage
 

@@ -126,7 +126,9 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) 
 		}
 		_, err := tx.Exec(ctx, order)
 		if err != nil {
+			defer tx.Rollback(ctx)
 			log.Printf("error put %+v. error is %v", metr, err)
+			return err
 		}
 	}
 	return tx.Commit(ctx)
