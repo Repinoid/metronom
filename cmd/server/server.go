@@ -38,8 +38,10 @@ var host = "localhost:8080"
 var sugar zap.SugaredLogger
 
 var ctx context.Context
-var memStor *memos.MemoryStorageStruct // 	in memory Storage
 var dbStorage *basis.DBstruct          // 	Data Base Storage
+
+var memStor *memos.MemoryStorageStruct // 	in memory Storage
+
 var inter models.Inter                 // 	= memStor OR dbStorage
 
 func main() {
