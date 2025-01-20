@@ -120,7 +120,7 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprint(rwr, *metr.Delta)
 	}
 	if storeInterval == 0 {
-		_ = memStor.SaveMS(fileStorePath)
+		_ = inter.SaveMS(fileStorePath)
 	}
 }
 

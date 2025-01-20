@@ -5,11 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"gorono/internal/basis"
+	"gorono/internal/memos"
 	"log"
 	"os"
 	"strconv"
 
-	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -87,37 +87,22 @@ func InitServer() error {
 	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
 		dbEndPoint = dbFlag
 	}
-	memStor = &MemStorage{
-		Gaugemetr: make(map[string]gauge),
-		Countmetr: make(map[string]counter),
-		Mutter:    &mtx,
-	}
+	memStor := memos.InitMemoryStorage()
+
 	if dbEndPoint == "" {
 		log.Println("No base in Env variable and command line argument")
 		inter = memStor // если базы нет, подключаем in memory Storage
 		return nil
 	}
-	dbStorage = &basis.DBstruct{}
+
 	ctx = context.Background()
-	err = startDB(ctx, dbEndPoint)
+	dbStorage, err := basis.InitDBStorage(ctx, dbEndPoint)
+
 	if err != nil {
 		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
 		log.Printf("Can't connect to DB %s\n", dbEndPoint)
 		return nil
 	}
 	inter = dbStorage // data base as Metric Storage
-	return nil
-}
-
-func startDB(ctx context.Context, dbEndPoint string) error {
-	baza, err := pgx.Connect(ctx, dbEndPoint)
-	if err != nil {
-		return fmt.Errorf("can't connect to DB %s err %w", dbEndPoint, err)
-	}
-	dbStorage.DB = baza
-	err = basis.TableCreation(ctx, dbStorage.DB)
-	if err != nil {
-		return fmt.Errorf("can't create tables in DB %s err %w", dbEndPoint, err)
-	}
 	return nil
 }

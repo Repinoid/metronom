@@ -88,7 +88,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(rwr).Encode(metr)
 
 	if storeInterval == 0 {
-		_ = memStor.SaveMS(fileStorePath)
+		_ = inter.SaveMS(fileStorePath)
 	}
 }
 

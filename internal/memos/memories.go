@@ -19,6 +19,16 @@ type MemoryStorageStruct struct {
 	Mutter    *sync.RWMutex
 }
 type Metrics = models.Metrics
+var mtx sync.RWMutex
+
+func InitMemoryStorage() *MemoryStorageStruct {
+	memStor := MemoryStorageStruct{
+		Gaugemetr: make(map[string]gauge),
+		Countmetr: make(map[string]counter),
+		Mutter:    &mtx,
+	}
+	return &memStor
+}
 
 func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics) error {
 	if !models.IsMetricsOK(*metr) {
