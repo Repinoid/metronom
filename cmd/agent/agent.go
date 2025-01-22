@@ -37,7 +37,8 @@ func run() error {
 		for i := 0; i < reportInterval/pollInterval; i++ {
 			memStorage = memos.GetMetrixFromOS()
 			cunt++
-			time.Sleep(time.Duration(pollInterval) * time.Second)
+			//time.Sleep(time.Duration(pollInterval) * time.Second)
+			time.Sleep(100 * time.Millisecond)
 		}
 		for ind, metr := range memStorage {
 			if metr.ID == "PollCount" && metr.MType == "counter" {
