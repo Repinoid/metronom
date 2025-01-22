@@ -13,120 +13,65 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
-	"time"
 
-	"internal/dbaser"
-	"internal/memo"
-	"internal/middles"
+	"gorono/internal/memos"
+	"gorono/internal/middlas"
+	"gorono/internal/models"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
-
-	"github.com/jackc/pgx/v5"
 )
 
-type gauge = memo.Gauge
-type counter = memo.Counter
-type MemStorage = memo.MemStorage
+type Metrics = memos.Metrics
+type MemStorage = memos.MemoryStorageStruct
 
-type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
-
-var memStor MemStorage
 var host = "localhost:8080"
 var sugar zap.SugaredLogger
 
-var MetricBaseStruct dbaser.Struct4db
+var ctx context.Context
 
-func saver(memStor *MemStorage, fnam string) error {
-
-	for {
-		time.Sleep(time.Duration(storeInterval) * time.Second)
-		err := memStor.SaveMS(fnam)
-		if err != nil {
-			return fmt.Errorf("save err %v", err)
-		}
-	}
-}
+var inter models.Inter // 	= memStor OR dbStorage
 
 func main() {
-	if err := foa4Server(); err != nil {
+
+	if err := InitServer(); err != nil {
 		log.Println(err, " no success for foa4Server() ")
 		return
 	}
 
-	memStor = MemStorage{
-		Gaugemetr: make(map[string]gauge),
-		Countmetr: make(map[string]counter),
-	}
-
-	if reStore && !MetricBaseStruct.IsBase {
-		_ = memStor.LoadMS(fileStorePath)
+	if reStore {
+		_ = inter.LoadMS(fileStorePath)
 	}
 
 	if storeInterval > 0 {
-		go saver(&memStor, fileStorePath)
+		go inter.Saver(fileStorePath, storeInterval)
 	}
 
 	if err := run(); err != nil {
 		panic(err)
 	}
-
 }
 
 func run() error {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", middles.WithLogging(treatMetric)).Methods("POST")
-	router.HandleFunc("/update/", middles.WithLogging(treatJSONMetric)).Methods("POST")
-	router.HandleFunc("/updates/", middles.WithLogging(buncheras)).Methods("POST")
-	router.HandleFunc("/value/{metricType}/{metricName}", middles.WithLogging(getMetric)).Methods("GET")
-	router.HandleFunc("/value/", middles.WithLogging(getJSONMetric)).Methods("POST")
-	router.HandleFunc("/", middles.WithLogging(getAllMetrix)).Methods("GET")
-	router.HandleFunc("/", middles.WithLogging(badPost)).Methods("POST") // if POST with wrong arguments structure
-	router.HandleFunc("/ping", middles.WithLogging(dbPinger)).Methods("GET")
-	router.HandleFunc("/ping", dbPinger).Methods("GET")
+	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", PutMetric).Methods("POST")
+	router.HandleFunc("/update/", PutJSONMetric).Methods("POST")
+	router.HandleFunc("/updates/", Buncheras).Methods("POST")
+	router.HandleFunc("/value/{metricType}/{metricName}", GetMetric).Methods("GET")
+	router.HandleFunc("/value/", GetJSONMetric).Methods("POST")
+	router.HandleFunc("/", GetAllMetrix).Methods("GET")
+	router.HandleFunc("/", BadPost).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/ping", DBPinger).Methods("GET")
 
-	router.Use(middles.GzipHandleEncoder)
-	router.Use(middles.GzipHandleDecoder)
-
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic("cannot initialize zap")
-	}
-	defer logger.Sync()
-	sugar = *logger.Sugar()
+	router.Use(middlas.GzipHandleEncoder)
+	router.Use(middlas.GzipHandleDecoder)
+	router.Use(middlas.WithLogging)
+	router.Use(CryptoHandleDecoder)
 
 	return http.ListenAndServe(host, router)
-}
-
-func dbPinger(rwr http.ResponseWriter, req *http.Request) {
-
-	ctx := context.Background()
-	db, err := pgx.Connect(ctx, dbEndPoint)
-
-	if err != nil {
-		rwr.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
-		return
-	}
-	defer db.Close(ctx)
-
-	err = db.Ping(ctx)
-	if err != nil {
-		rwr.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
-		return
-	}
-	rwr.WriteHeader(http.StatusOK)
-	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
 }
 
 /*

@@ -1,84 +1,28 @@
 package main
 
 import (
-	"bytes"
-	"compress/gzip"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"log"
-	"math/rand/v2"
-	"runtime"
-	"sync"
 	"time"
+
+	"gorono/internal/memos"
+	"gorono/internal/middlas"
+	"gorono/internal/models"
+	"gorono/internal/privacy"
 
 	"github.com/go-resty/resty/v2"
 )
 
-type gauge float64
-type counter int64
-type MemStorage struct {
-	gau    map[string]gauge
-	count  map[string]counter
-	mutter sync.RWMutex
-}
-type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
-
-// var memStor *MemStorage
 var host = "localhost:8080"
 var reportInterval = 10
 var pollInterval = 2
-
-func getMetrix(memStor *MemStorage) error {
-	var mS runtime.MemStats
-	runtime.ReadMemStats(&mS)
-	memStor.mutter.Lock() // MUTEXed
-	defer memStor.mutter.Unlock()
-
-	//	memStor.PollCount++
-	memStor.gau = map[string]gauge{
-		"Alloc":         gauge(mS.Alloc),
-		"BuckHashSys":   gauge(mS.BuckHashSys),
-		"Frees":         gauge(mS.Frees),
-		"GCCPUFraction": gauge(mS.GCCPUFraction),
-		"GCSys":         gauge(mS.GCSys),
-		"HeapAlloc":     gauge(mS.HeapAlloc),
-		"HeapIdle":      gauge(mS.HeapIdle),
-		"HeapInuse":     gauge(mS.HeapInuse),
-		"HeapObjects":   gauge(mS.HeapObjects),
-		"HeapReleased":  gauge(mS.HeapReleased),
-		"HeapSys":       gauge(mS.HeapSys),
-		"LastGC":        gauge(mS.LastGC),
-		"Lookups":       gauge(mS.Lookups),
-		"MCacheInuse":   gauge(mS.MCacheInuse),
-		"MCacheSys":     gauge(mS.MCacheSys),
-		"MSpanInuse":    gauge(mS.MSpanInuse),
-		"MSpanSys":      gauge(mS.MSpanSys),
-		"Mallocs":       gauge(mS.Mallocs),
-		"NextGC":        gauge(mS.NextGC),
-		"NumForcedGC":   gauge(mS.NumForcedGC),
-		"NumGC":         gauge(mS.NumGC),
-		"OtherSys":      gauge(mS.OtherSys),
-		"PauseTotalNs":  gauge(mS.PauseTotalNs),
-		"StackInuse":    gauge(mS.StackInuse),
-		"StackSys":      gauge(mS.StackSys),
-		"Sys":           gauge(mS.Sys),
-		"TotalAlloc":    gauge(mS.TotalAlloc),
-		"RandomValue":   gauge(rand.Float64()), // self-defined
-	}
-	memStor.count = map[string]counter{
-		"PollCount": counter(0), // self-defined
-	}
-	return nil
-}
+var key = ""
 
 func main() {
-	if err := foa4Agent(); err != nil {
-		log.Fatal("INTERVAL error ", err)
+	if err := initAgent(); err != nil {
+		log.Fatal("INTERVALS error ", err)
 		return
 	}
 	if err := run(); err != nil {
@@ -87,39 +31,51 @@ func main() {
 }
 
 func run() error {
-	memStor := MemStorage{} //memStor := new(MemStorage)
+	memStorage := []models.Metrics{}
 	for {
-		cunt := 0
+		cunt := int64(0)
 		for i := 0; i < reportInterval/pollInterval; i++ {
-			err := getMetrix(&memStor)
-			if err != nil {
-				log.Println(err, "getMetrix")
-			} else {
-				cunt++
-			}
+			memStorage = memos.GetMetrixFromOS()
+			cunt++
 			time.Sleep(time.Duration(pollInterval) * time.Second)
 		}
-
-		memStor.count["PollCount"] = counter(cunt)
-		bunch := makeBunchOfMetrics(&memStor)
-		log.Println(len(bunch))
-
-		err := postBunch(bunch)
+		for ind, metr := range memStorage {
+			if metr.ID == "PollCount" && metr.MType == "counter" {
+				memStorage[ind].Delta = &cunt // в сам memStorage, metr - копия
+				break
+			}
+		}
+		err := postBunch(memStorage)
 		if err != nil {
 			log.Printf("AGENT postBunch ERROR %+v\n", err)
 		}
 	}
 }
 
-func postBunch(bunch []Metrics) error {
+func postBunch(bunch []models.Metrics) error {
 	marshalledBunch, err := json.Marshal(bunch)
 	if err != nil {
 		return err
 	}
-	compressedBunch, err := pack2gzip(marshalledBunch)
+
+	//keyB, _ := privacy.RandBytes(32)
+	var haHex string
+	if key != "" {
+		keyB := md5.Sum([]byte(key)) //[]byte(key)
+
+		coded, err := privacy.EncryptB2B(marshalledBunch, keyB[:])
+		if err != nil {
+			return err
+		}
+		ha := privacy.MakeHash(nil, coded, keyB[:])
+		haHex = hex.EncodeToString(ha)
+		marshalledBunch = coded
+	}
+	compressedBunch, err := middlas.Pack2gzip(marshalledBunch)
 	if err != nil {
 		return err
 	}
+
 	httpc := resty.New() //
 	httpc.SetBaseURL("http://" + host)
 
@@ -136,45 +92,19 @@ func postBunch(bunch []Metrics) error {
 	})
 
 	req := httpc.R().
-		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Content-Encoding", "gzip"). // сжаtо
 		SetBody(compressedBunch).
 		SetHeader("Accept-Encoding", "gzip")
 
+	if key != "" {
+		req.Header.Add("HashSHA256", haHex)
+	}
+
 	_, err = req.
 		SetDoNotParseResponse(false).
-		Post("/updates/")
+		Post("/updates/") // slash on the tile
 
 		//	log.Printf("%+v\n", resp)
 
 	return err
-}
-
-func makeBunchOfMetrics(memStor *MemStorage) []Metrics {
-	metrArray := make([]Metrics, 0, len(memStor.gau)+len(memStor.count))
-
-	for metrName, metrValue := range memStor.count {
-		mval := int64(metrValue)
-		metr := Metrics{ID: metrName, MType: "counter", Delta: &mval}
-		metrArray = append(metrArray, metr)
-	}
-	for metrName, metrValue := range memStor.gau {
-		mval := float64(metrValue)
-		metr := Metrics{ID: metrName, MType: "gauge", Value: &mval}
-		metrArray = append(metrArray, metr)
-	}
-	return metrArray
-}
-
-func pack2gzip(data2pack []byte) ([]byte, error) {
-	var buf bytes.Buffer
-	zw := gzip.NewWriter(&buf)
-	//	zw.ModTime = time.Now()
-	_, err := zw.Write(data2pack)
-	if err != nil {
-		return nil, fmt.Errorf("gzip.NewWriter.Write %w ", err)
-	}
-	if err := zw.Close(); err != nil {
-		return nil, fmt.Errorf("gzip.NewWriter.Close %w ", err)
-	}
-	return buf.Bytes(), nil
 }

@@ -7,10 +7,14 @@ import (
 	"strconv"
 )
 
-func foa4Agent() error {
+func initAgent() error {
 	enva, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		host = enva
+	}
+	enva, exists = os.LookupEnv("KEY")
+	if exists {
+		key = enva
 	}
 	enva, exists = os.LookupEnv("REPORT_INTERVAL")
 	if exists {
@@ -32,6 +36,7 @@ func foa4Agent() error {
 
 	var hostFlag string
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
+	flag.StringVar(&key, "k", key, "Only -a={host:port} flag is allowed here")
 	reportIntervalFlag := flag.Int("r", reportInterval, "reportInterval")
 	pollIntervalFlag := flag.Int("p", pollInterval, "pollIntervalFlag")
 	flag.Parse()

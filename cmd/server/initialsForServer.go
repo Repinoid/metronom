@@ -4,20 +4,29 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"internal/dbaser"
+	"gorono/internal/basis"
+	"gorono/internal/memos"
 	"log"
 	"os"
 	"strconv"
 
-	"github.com/jackc/pgx/v5"
+	"go.uber.org/zap"
 )
 
 var storeInterval = 300
 var fileStorePath = "./goshran.txt"
 var reStore = true
 var dbEndPoint = ""
+var key string = ""
 
-func foa4Server() error {
+func InitServer() error {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic("cannot initialize zap")
+	}
+	defer logger.Sync()
+	sugar = *logger.Sugar()
+
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		host = hoster
@@ -30,6 +39,10 @@ func foa4Server() error {
 		if err != nil {
 			log.Printf("STORE_INTERVAL error value %s\t error %v", enva, err)
 		}
+	}
+	enva, exists = os.LookupEnv("KEY")
+	if exists {
+		key = enva
 	}
 	enva, exists = os.LookupEnv("FILE_STORAGE_PATH")
 	if exists {
@@ -53,6 +66,7 @@ func foa4Server() error {
 	var fileStoreFlag string
 	var dbFlag string
 
+	flag.StringVar(&key, "k", key, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&dbFlag, "d", dbEndPoint, "Data Base endpoint")
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", fileStorePath, "Only -a={host:port} flag is allowed here")
@@ -79,24 +93,22 @@ func foa4Server() error {
 	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
 		dbEndPoint = dbFlag
 	}
+	memStor := memos.InitMemoryStorage()
+
 	if dbEndPoint == "" {
 		log.Println("No base in Env variable and command line argument")
+		inter = memStor // если базы нет, подключаем in memory Storage
 		return nil
 	}
-	ctx := context.Background()
-	mb, err := pgx.Connect(ctx, dbEndPoint)
-	MetricBaseStruct = dbaser.Struct4db{MetricBase: mb, Ctx: ctx, IsBase: false}
+
+	ctx = context.Background()
+	dbStorage, err := basis.InitDBStorage(ctx, dbEndPoint)
+
 	if err != nil {
+		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
 		log.Printf("Can't connect to DB %s\n", dbEndPoint)
 		return nil
 	}
-	err = dbaser.TableCreation(&MetricBaseStruct)
-	//	err = dbaser.TableCreation(ctx, MetricBaseStruct.MetricBase)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create tables: %v\n", err)
-		return nil
-	}
-	MetricBaseStruct.IsBase = true
-
+	inter = dbStorage // data base as Metric Storage
 	return nil
 }
