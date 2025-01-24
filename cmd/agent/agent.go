@@ -35,10 +35,11 @@ func run() error {
 	for {
 		cunt := int64(0)
 		for i := 0; i < reportInterval/pollInterval; i++ {
-			memStorage = memos.GetMetrixFromOS()
+			memStorage = *memos.GetMetrixFromOS()
 			cunt++
-			//time.Sleep(time.Duration(pollInterval) * time.Second)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(time.Duration(pollInterval) * time.Second)
+			// log.Printf("\n%d\n", cunt)
+			// time.Sleep(100 * time.Millisecond)
 		}
 		for ind, metr := range memStorage {
 			if metr.ID == "PollCount" && metr.MType == "counter" {
