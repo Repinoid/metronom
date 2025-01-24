@@ -22,6 +22,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
+
+	_ "github.com/jmoiron/sqlx"
 )
 
 type Metrics = memos.Metrics
