@@ -14,6 +14,7 @@ import (
 	"strings"
 )
 
+// /value/ handler
 func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
@@ -21,6 +22,7 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest) // с некорректным типом метрики или значением возвращать http.StatusBadRequest.
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
+		sugar.Debugf("io.ReadAll %+v\n", err)
 		return
 	}
 	defer req.Body.Close()
@@ -30,6 +32,7 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest) // с некорректным  значением возвращать http.StatusBadRequest.
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
+		sugar.Debugf("json.Unmarshal %+v err %+v\n", metr, err)
 		return
 	}
 	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr)
@@ -38,6 +41,9 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		json.NewEncoder(rwr).Encode(metr)
 		return
 	}
+
+	//sugar.Debugf("after inter.GetMetric %+v err %+v\n", metr, err)
+
 	if strings.Contains(err.Error(), "unknown metric") {
 		//rwr.WriteHeader(444) // неизвестной метрики сервер должен возвращать http.StatusNotFound.
 		rwr.WriteHeader(http.StatusNotFound) // неизвестной метрики сервер должен возвращать http.StatusNotFound.
@@ -101,9 +107,11 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+		sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! io.ReadAll(req.Body) err %+v\n", err)
 		return
 	}
 	defer req.Body.Close()
+	sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! buncheras err %+v\n", err)
 
 	buf := bytes.NewBuffer(telo)
 	metras := []models.Metrics{}
@@ -111,12 +119,15 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+		sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! bunch decode  err %+v\n", err)
 		return
 	}
 	err = basis.PutAllMetricsWrapper(inter.PutAllMetrics)(ctx, &metras)
+	sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!! Put inter  err %+v\n", inter)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+		sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Put   err %+v\n", err)
 		return
 	}
 
@@ -126,6 +137,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 
 		coded, err := privacy.EncryptB2B(toencrypt, keyB[:])
 		if err != nil {
+			sugar.Debugf("encrypt   err %+v\n", err)
 			return
 		}
 		ha := privacy.MakeHash(nil, coded, keyB[:])
