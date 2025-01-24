@@ -64,12 +64,13 @@ func run() error {
 	router.HandleFunc("/value/", GetJSONMetric).Methods("POST")
 	router.HandleFunc("/", GetAllMetrix).Methods("GET")
 	router.HandleFunc("/", BadPost).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/ping/", DBPinger).Methods("GET")
 	router.HandleFunc("/ping", DBPinger).Methods("GET")
 
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
 	router.Use(middlas.WithLogging)
-	router.Use(CryptoHandleDecoder)
+	//	router.Use(CryptoHandleDecoder)
 
 	return http.ListenAndServe(host, router)
 }
