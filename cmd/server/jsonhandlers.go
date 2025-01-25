@@ -93,6 +93,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
+
 func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {
