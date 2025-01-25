@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"gorono/internal/basis"
 	"gorono/internal/models"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5"
 )
 
 func BadPost(rwr http.ResponseWriter, req *http.Request) {
@@ -126,6 +128,35 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 }
 
 func DBPinger(rwr http.ResponseWriter, req *http.Request) {
+
+	//db, err := sql.Open("pgx", dbEndPoint)
+
+	ctx := context.Background()
+	db, err := pgx.Connect(ctx, dbEndPoint)
+
+	//	log.Printf("Endpoint is %s\n", dbEndPoint)
+
+	if err != nil {
+		rwr.WriteHeader(http.StatusInternalServerError)
+		//		log.Printf("Open DB error is %v\n", err)
+		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
+		return
+	}
+	defer db.Close(ctx)
+
+	err = db.Ping(ctx)
+	if err != nil {
+		rwr.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
+		//	log.Printf("PING DB error is %v\n", err)
+		return
+	}
+	rwr.WriteHeader(http.StatusOK)
+	//log.Printf("AFTER PING DB error is %v\n", err)
+	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
+}
+
+func DBPingera(rwr http.ResponseWriter, req *http.Request) {
 	startt := time.Now()
 	defer func(t time.Time) { fmt.Printf("defer Ping time %v µs\n", time.Since(startt).Microseconds()) }(startt)
 
