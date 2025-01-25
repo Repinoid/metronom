@@ -40,10 +40,10 @@ func InitServer() error {
 			log.Printf("STORE_INTERVAL error value %s\t error %v", enva, err)
 		}
 	}
-	enva, exists = os.LookupEnv("KEY")
-	if exists {
-		key = enva
-	}
+	// enva, exists = os.LookupEnv("KEY")
+	// if exists {
+	// 	key = enva
+	// }
 	enva, exists = os.LookupEnv("FILE_STORAGE_PATH")
 	if exists {
 		fileStorePath = enva
