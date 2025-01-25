@@ -21,7 +21,6 @@ import (
 	"gorono/internal/models"
 
 	"github.com/gorilla/mux"
-
 	"go.uber.org/zap"
 )
 
@@ -67,9 +66,10 @@ func run() error {
 	router.HandleFunc("/", BadPost).Methods("POST") // if POST with wrong arguments structure
 	router.HandleFunc("/ping", DBPinger).Methods("GET")
 
-	router.Use(middlas.WithLogging)
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
+	router.Use(middlas.WithLogging)
+	router.Use(CryptoHandleDecoder)
 
 	return http.ListenAndServe(host, router)
 }
