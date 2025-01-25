@@ -65,8 +65,9 @@ func InitServer() error {
 	var hostFlag string
 	var fileStoreFlag string
 	var dbFlag string
+	var keyFlag string
 
-	flag.StringVar(&key, "k", key, "Only -a={host:port} flag is allowed here")
+	flag.StringVar(&keyFlag, "k", key, "KEY")
 	flag.StringVar(&dbFlag, "d", dbEndPoint, "Data Base endpoint")
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", fileStorePath, "Only -a={host:port} flag is allowed here")
@@ -92,6 +93,9 @@ func InitServer() error {
 	}
 	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
 		dbEndPoint = dbFlag
+	}
+	if _, exists := os.LookupEnv("KEY"); !exists {
+		key = keyFlag
 	}
 	memStor := memos.InitMemoryStorage()
 

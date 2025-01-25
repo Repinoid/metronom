@@ -7,6 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	_ "database/sql"
+
+	_ "github.com/lib/pq"
+
 	"gorono/internal/models"
 )
 
@@ -31,9 +35,9 @@ func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 }
 
 func TableCreation(ctx context.Context, db *pgx.Conn) error {
-	crea := "DROP TABLE Counter;"
-	crea += "DROP TABLE Gauge;"
-	crea += "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
+	//	crea := "DROP TABLE Counter;"
+	//	crea += "DROP TABLE Gauge;"
+	crea := "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
 	tag, err := db.Exec(ctx, crea)
 	if err != nil {
 		return fmt.Errorf("error create Gauge table. Tag is \"%s\" error is %w", tag.String(), err)
@@ -177,7 +181,12 @@ func (dataBase *DBstruct) Saver(fnam string, i int) error {
 func (dataBase *DBstruct) Ping(ctx context.Context) error {
 	err := dataBase.DB.Ping(ctx)
 	if err != nil {
+		log.Printf("No PING  err %+v\n", err)
 		return fmt.Errorf("no ping %w", err)
 	}
 	return nil
+}
+
+func (dataBase *DBstruct) GetName() string {
+	return "DBaser"
 }

@@ -107,7 +107,7 @@ func postBunch(bunch []models.Metrics) error {
 		SetDoNotParseResponse(false).
 		Post("/updates/") // slash on the tile
 
-	log.Printf("AGENT responce from server %+v\n", resp)
+	log.Printf("AGENT responce from server %+v\n", resp.StatusCode())
 
 	return err
 }

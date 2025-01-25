@@ -10,6 +10,7 @@ import (
 	"gorono/internal/models"
 	"gorono/internal/privacy"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -111,7 +112,6 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer req.Body.Close()
-	sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! buncheras err %+v\n", err)
 
 	buf := bytes.NewBuffer(telo)
 	metras := []models.Metrics{}
@@ -123,7 +123,6 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	err = basis.PutAllMetricsWrapper(inter.PutAllMetrics)(ctx, &metras)
-	sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!! Put inter  err %+v\n", inter)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
@@ -164,6 +163,9 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 			keyB := md5.Sum([]byte(key)) //[]byte(key)
 			ha := privacy.MakeHash(nil, telo, keyB[:])
 			haHex := hex.EncodeToString(ha)
+
+			log.Printf("%s from KEY %s\n%s from Header\n", haHex, key, haInHeader)
+
 			if haHex != haInHeader {
 				rwr.WriteHeader(http.StatusBadRequest)
 				fmt.Fprintf(rwr, `{"wrong hash":"%s"}`, haInHeader)
