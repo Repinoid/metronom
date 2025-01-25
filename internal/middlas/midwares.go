@@ -105,10 +105,6 @@ func GzipHandleDecoder(next http.Handler) http.Handler {
 				io.WriteString(rwr, err.Error())
 				return
 			}
-			for name := range req.Header {
-				hea := req.Header.Get(name)
-				newReq.Header.Add(name, hea)
-			}
 			req = newReq
 		}
 

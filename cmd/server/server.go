@@ -69,7 +69,6 @@ func run() error {
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
 	router.Use(middlas.WithLogging)
-	router.Use(CryptoHandleDecoder)
 
 	return http.ListenAndServe(host, router)
 }

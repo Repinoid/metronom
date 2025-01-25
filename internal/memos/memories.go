@@ -19,7 +19,6 @@ type MemoryStorageStruct struct {
 	Mutter    *sync.RWMutex
 }
 type Metrics = models.Metrics
-
 var mtx sync.RWMutex
 
 func InitMemoryStorage() *MemoryStorageStruct {
@@ -188,6 +187,5 @@ func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error
 	}
 }
 func (memorial *MemoryStorageStruct) Ping(ctx context.Context) error {
-	//	log.Println(" Skotobaza closed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	return fmt.Errorf(" Skotobaza closed")
 }

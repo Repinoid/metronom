@@ -10,9 +10,10 @@ import (
 type gauge = models.Gauge
 type counter = models.Counter
 
-func GetMetrixFromOS() *[]models.Metrics {
+func GetMetrixFromOS() []models.Metrics {
 	var mS runtime.MemStats
 	runtime.ReadMemStats(&mS)
+
 	gaugeMap := map[string]gauge{
 		"Alloc":         gauge(mS.Alloc),
 		"BuckHashSys":   gauge(mS.BuckHashSys),
@@ -49,14 +50,14 @@ func GetMetrixFromOS() *[]models.Metrics {
 	metrArray := make([]models.Metrics, 0, len(gaugeMap)+len(counterMap))
 
 	for metrName, metrValue := range counterMap {
-		mval := int64(metrValue) + int64(rand.IntN(10))
+		mval := int64(metrValue)
 		metr := models.Metrics{ID: metrName, MType: "counter", Delta: &mval}
 		metrArray = append(metrArray, metr)
 	}
 	for metrName, metrValue := range gaugeMap {
-		mval := float64(metrValue) + float64(rand.IntN(10))
+		mval := float64(metrValue)
 		metr := models.Metrics{ID: metrName, MType: "gauge", Value: &mval}
 		metrArray = append(metrArray, metr)
 	}
-	return &metrArray
+	return metrArray
 }
