@@ -65,10 +65,10 @@ func run() error {
 	router.HandleFunc("/", GetAllMetrix).Methods("GET")
 	router.HandleFunc("/", BadPost).Methods("POST") // if POST with wrong arguments structure
 	router.HandleFunc("/ping", DBPinger).Methods("GET")
-
+	
+	router.Use(middlas.WithLogging)
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
-	router.Use(middlas.WithLogging)
 
 	return http.ListenAndServe(host, router)
 }
