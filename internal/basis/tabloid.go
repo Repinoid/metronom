@@ -106,6 +106,7 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) 
 	if err != nil {
 		return fmt.Errorf("error db.Begin  %[1]w", err)
 	}
+	defer tx.Rollback(ctx)
 	var order string
 	for _, metr := range *metras {
 		if !models.IsMetricsOK(metr) {
@@ -126,7 +127,6 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) 
 		}
 		_, err := tx.Exec(ctx, order)
 		if err != nil {
-			defer tx.Rollback(ctx)
 			log.Printf("error put %+v. error is %v", metr, err)
 			return err
 		}
