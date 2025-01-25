@@ -24,6 +24,14 @@ func initAgent() error {
 			return fmt.Errorf("REPORT_INTERVAL error value %s\t error %w", enva, err)
 		}
 	}
+	enva, exists = os.LookupEnv("RATE_LIMIT")
+	if exists {
+		var err error
+		rate_limit, err = strconv.Atoi(enva)
+		if err != nil {
+			return fmt.Errorf("RATE_LIMIT error value %s\t error %w", enva, err)
+		}
+	}
 	enva, exists = os.LookupEnv("POLL_INTERVAL")
 	if exists {
 		var err error
@@ -33,12 +41,14 @@ func initAgent() error {
 		}
 		return nil
 	}
+	
 
 	var hostFlag string
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&key, "k", key, "Only -a={host:port} flag is allowed here")
 	reportIntervalFlag := flag.Int("r", reportInterval, "reportInterval")
 	pollIntervalFlag := flag.Int("p", pollInterval, "pollIntervalFlag")
+	rate_limitFlag := flag.Int("l", pollInterval, "pollIntervalFlag")
 	flag.Parse()
 
 	if _, exists := os.LookupEnv("ADDRESS"); !exists {
@@ -49,6 +59,9 @@ func initAgent() error {
 	}
 	if _, exists := os.LookupEnv("POLL_INTERVAL"); !exists {
 		pollInterval = *pollIntervalFlag
+	}
+	if _, exists := os.LookupEnv("RATE_LIMIT"); !exists {
+		rate_limit = *rate_limitFlag
 	}
 	return nil
 }

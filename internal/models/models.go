@@ -1,9 +1,11 @@
+// пакет определения типов
 package models
 
 import (
 	"context"
 )
 
+// struct - имя, тип, значение (ссылка на)
 type Metrics struct {
 	ID    string   `json:"id"`              // имя метрики
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
@@ -18,7 +20,7 @@ type Inter interface {
 	PutMetric(ctx context.Context, metr *Metrics) error
 	GetAllMetrics(ctx context.Context) (*[]Metrics, error)
 	PutAllMetrics(ctx context.Context, metras *[]Metrics) error
-	Ping(ctx context.Context) error
+	//	Ping(ctx context.Context) error
 	LoadMS(fnam string) error
 	SaveMS(fnam string) error
 	Saver(fnam string, storeInterval int) error
