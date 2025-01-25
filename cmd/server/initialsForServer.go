@@ -66,7 +66,7 @@ func InitServer() error {
 	var fileStoreFlag string
 	var dbFlag string
 
-	flag.StringVar(&key, "k", key, "Only -a={host:port} flag is allowed here")
+	//	flag.StringVar(&key, "k", key, "KEY")
 	flag.StringVar(&dbFlag, "d", dbEndPoint, "Data Base endpoint")
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", fileStorePath, "Only -a={host:port} flag is allowed here")
