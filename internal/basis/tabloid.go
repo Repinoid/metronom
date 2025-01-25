@@ -7,6 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	_ "database/sql"
+
+	_ "github.com/lib/pq"
+
 	"gorono/internal/models"
 )
 
