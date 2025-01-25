@@ -27,7 +27,7 @@ func initAgent() error {
 	enva, exists = os.LookupEnv("RATE_LIMIT")
 	if exists {
 		var err error
-		rate_limit, err = strconv.Atoi(enva)
+		rateLimit, err = strconv.Atoi(enva)
 		if err != nil {
 			return fmt.Errorf("RATE_LIMIT error value %s\t error %w", enva, err)
 		}
@@ -61,7 +61,7 @@ func initAgent() error {
 		pollInterval = *pollIntervalFlag
 	}
 	if _, exists := os.LookupEnv("RATE_LIMIT"); !exists {
-		rate_limit = *rate_limitFlag
+		rateLimit = *rate_limitFlag
 	}
 	return nil
 }

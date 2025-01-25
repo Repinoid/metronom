@@ -19,7 +19,7 @@ var host = "localhost:8080"
 var reportInterval = 10
 var pollInterval = 2
 var key = ""
-var rate_limit = 4
+var rateLimit = 4
 
 func main() {
 	if err := initAgent(); err != nil {
