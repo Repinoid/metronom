@@ -17,6 +17,7 @@ var storeInterval = 300
 var fileStorePath = "./goshran.txt"
 var reStore = true
 var dbEndPoint = ""
+var key string = ""
 
 func InitServer() error {
 	logger, err := zap.NewDevelopment()
@@ -38,6 +39,10 @@ func InitServer() error {
 		if err != nil {
 			log.Printf("STORE_INTERVAL error value %s\t error %v", enva, err)
 		}
+	}
+	enva, exists = os.LookupEnv("KEY")
+	if exists {
+		key = enva
 	}
 	enva, exists = os.LookupEnv("FILE_STORAGE_PATH")
 	if exists {
@@ -61,6 +66,7 @@ func InitServer() error {
 	var fileStoreFlag string
 	var dbFlag string
 
+	flag.StringVar(&key, "k", key, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&dbFlag, "d", dbEndPoint, "Data Base endpoint")
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", fileStorePath, "Only -a={host:port} flag is allowed here")
