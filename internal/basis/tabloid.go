@@ -35,9 +35,9 @@ func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 }
 
 func TableCreation(ctx context.Context, db *pgx.Conn) error {
-	crea := "DROP TABLE Counter;"
-	crea += "DROP TABLE Gauge;"
-	crea += "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
+	//	crea := "DROP TABLE Counter;"
+	//	crea += "DROP TABLE Gauge;"
+	crea := "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
 	tag, err := db.Exec(ctx, crea)
 	if err != nil {
 		return fmt.Errorf("error create Gauge table. Tag is \"%s\" error is %w", tag.String(), err)
