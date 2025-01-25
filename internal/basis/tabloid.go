@@ -7,10 +7,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	_ "database/sql"
-
-	_ "github.com/lib/pq"
-
 	"gorono/internal/models"
 )
 
@@ -35,9 +31,7 @@ func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 }
 
 func TableCreation(ctx context.Context, db *pgx.Conn) error {
-	crea := "DROP TABLE Counter;"
-	crea += "DROP TABLE Gauge;"
-	crea += "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
+	crea := "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
 	tag, err := db.Exec(ctx, crea)
 	if err != nil {
 		return fmt.Errorf("error create Gauge table. Tag is \"%s\" error is %w", tag.String(), err)
@@ -112,6 +106,7 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) 
 	if err != nil {
 		return fmt.Errorf("error db.Begin  %[1]w", err)
 	}
+	defer tx.Rollback(ctx)
 	var order string
 	for _, metr := range *metras {
 		if !models.IsMetricsOK(metr) {
@@ -132,7 +127,6 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) 
 		}
 		_, err := tx.Exec(ctx, order)
 		if err != nil {
-			defer tx.Rollback(ctx)
 			log.Printf("error put %+v. error is %v", metr, err)
 			return err
 		}
@@ -181,7 +175,6 @@ func (dataBase *DBstruct) Saver(fnam string, i int) error {
 func (dataBase *DBstruct) Ping(ctx context.Context) error {
 	err := dataBase.DB.Ping(ctx)
 	if err != nil {
-		log.Printf("No PING  err %+v\n", err)
 		return fmt.Errorf("no ping %w", err)
 	}
 	return nil

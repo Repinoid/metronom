@@ -127,7 +127,6 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 func DBPinger(rwr http.ResponseWriter, req *http.Request) {
 
 	err := inter.Ping(ctx)
-	sugar.Debugf("PING !!!!!!!!!!!!!! err is %+v\n", err)
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
