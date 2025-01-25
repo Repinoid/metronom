@@ -41,14 +41,13 @@ func initAgent() error {
 		}
 		return nil
 	}
-	
 
 	var hostFlag string
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&key, "k", key, "Only -a={host:port} flag is allowed here")
 	reportIntervalFlag := flag.Int("r", reportInterval, "reportInterval")
 	pollIntervalFlag := flag.Int("p", pollInterval, "pollIntervalFlag")
-	rate_limitFlag := flag.Int("l", pollInterval, "pollIntervalFlag")
+	rateLimitFlag := flag.Int("l", pollInterval, "pollIntervalFlag")
 	flag.Parse()
 
 	if _, exists := os.LookupEnv("ADDRESS"); !exists {
@@ -61,7 +60,7 @@ func initAgent() error {
 		pollInterval = *pollIntervalFlag
 	}
 	if _, exists := os.LookupEnv("RATE_LIMIT"); !exists {
-		rateLimit = *rate_limitFlag
+		rateLimit = *rateLimitFlag
 	}
 	return nil
 }
