@@ -177,6 +177,7 @@ func (dataBase *DBstruct) Saver(fnam string, i int) error {
 func (dataBase *DBstruct) Ping(ctx context.Context) error {
 	err := dataBase.DB.Ping(ctx)
 	if err != nil {
+		log.Printf("No PING err %+v\n", err)
 		return fmt.Errorf("no ping %w", err)
 	}
 	return nil
