@@ -186,3 +186,7 @@ func (dataBase *DBstruct) Ping(ctx context.Context) error {
 	}
 	return nil
 }
+
+func (dataBase *DBstruct) GetName() string {
+	return "DBaser"
+}

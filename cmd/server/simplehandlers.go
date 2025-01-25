@@ -6,6 +6,7 @@ import (
 	"gorono/internal/models"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -125,8 +126,11 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 }
 
 func DBPinger(rwr http.ResponseWriter, req *http.Request) {
+	startt := time.Now()
+	defer func(t time.Time) { fmt.Printf("defer Ping time %v µs\n", time.Since(startt).Microseconds()) }(startt)
 
 	err := inter.Ping(ctx)
+	sugar.Debugf("Ping time %v µs-----------Inter is %s\n", time.Since(startt).Microseconds(), inter.GetName())
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)

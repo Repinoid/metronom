@@ -191,3 +191,6 @@ func (memorial *MemoryStorageStruct) Ping(ctx context.Context) error {
 	//	log.Println(" Skotobaza closed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	return fmt.Errorf(" Skotobaza closed")
 }
+func (memorial *MemoryStorageStruct) GetName() string {
+	return "Memorial"
+}
