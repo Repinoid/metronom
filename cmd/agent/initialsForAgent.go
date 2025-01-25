@@ -12,6 +12,10 @@ func initAgent() error {
 	if exists {
 		host = enva
 	}
+	enva, exists = os.LookupEnv("KEY")
+	if exists {
+		key = enva
+	}
 	enva, exists = os.LookupEnv("REPORT_INTERVAL")
 	if exists {
 		var err error
@@ -32,6 +36,7 @@ func initAgent() error {
 
 	var hostFlag string
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
+	flag.StringVar(&key, "k", key, "Only -a={host:port} flag is allowed here")
 	reportIntervalFlag := flag.Int("r", reportInterval, "reportInterval")
 	pollIntervalFlag := flag.Int("p", pollInterval, "pollIntervalFlag")
 	flag.Parse()

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"log"
 	"time"
@@ -8,6 +10,7 @@ import (
 	"gorono/internal/memos"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
+	"gorono/internal/privacy"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -15,6 +18,7 @@ import (
 var host = "localhost:8080"
 var reportInterval = 10
 var pollInterval = 2
+var key = ""
 
 func main() {
 	if err := initAgent(); err != nil {
@@ -31,9 +35,11 @@ func run() error {
 	for {
 		cunt := int64(0)
 		for i := 0; i < reportInterval/pollInterval; i++ {
-			memStorage = memos.GetMetrixFromOS()
+			memStorage = *memos.GetMetrixFromOS()
 			cunt++
 			time.Sleep(time.Duration(pollInterval) * time.Second)
+			// log.Printf("\n%d\n", cunt)
+			// time.Sleep(100 * time.Millisecond)
 		}
 		for ind, metr := range memStorage {
 			if metr.ID == "PollCount" && metr.MType == "counter" {
@@ -53,10 +59,26 @@ func postBunch(bunch []models.Metrics) error {
 	if err != nil {
 		return err
 	}
+
+	//keyB, _ := privacy.RandBytes(32)
+	var haHex string
+	//	if key != "" {
+	if key == "qwertya" {
+		keyB := md5.Sum([]byte(key)) //[]byte(key)
+
+		coded, err := privacy.EncryptB2B(marshalledBunch, keyB[:])
+		if err != nil {
+			return err
+		}
+		ha := privacy.MakeHash(nil, coded, keyB[:])
+		haHex = hex.EncodeToString(ha)
+		marshalledBunch = coded
+	}
 	compressedBunch, err := middlas.Pack2gzip(marshalledBunch)
 	if err != nil {
 		return err
 	}
+
 	httpc := resty.New() //
 	httpc.SetBaseURL("http://" + host)
 
@@ -77,11 +99,15 @@ func postBunch(bunch []models.Metrics) error {
 		SetBody(compressedBunch).
 		SetHeader("Accept-Encoding", "gzip")
 
-	_, err = req.
+	if key != "" {
+		req.Header.Add("HashSHA256", haHex)
+	}
+
+	resp, err := req.
 		SetDoNotParseResponse(false).
 		Post("/updates/") // slash on the tile
 
-		//	log.Printf("%+v\n", resp)
+	log.Printf("AGENT responce from server %+v\n", resp.StatusCode())
 
 	return err
 }
