@@ -27,7 +27,7 @@ func Test_badPost(t *testing.T) {
 			want: want{
 				code:        http.StatusNotFound,
 				response:    `{"status":"StatusNotFound"}`,
-				contentType: "text/plain",
+				contentType: "text/html",
 			},
 		},
 	}
@@ -35,7 +35,7 @@ func Test_badPost(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, tt.urla, nil)
 			w := httptest.NewRecorder()
-			badPost(w, request)
+			BadPost(w, request)
 			res := w.Result()
 			assert.Equal(t, tt.want.code, res.StatusCode)
 			defer res.Body.Close()

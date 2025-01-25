@@ -1,35 +1,52 @@
+/*
+metricstest -test.v -test.run="^TestIteration10[AB]*$" ^
+-binary-path=cmd/server/server.exe -source-path=cmd/server/ ^
+-agent-binary-path=cmd/agent/agent.exe ^
+-server-port=8080 -file-storage-path=goshran.txt ^
+-database-dsn=postgres://postgres:passwordas@localhost:5432/postgres
+
+
+curl localhost:8080/update/ -H "Content-Type":"application/json" -d "{\"type\":\"gauge\",\"id\":\"nam\",\"value\":77}"
+*/
+
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"net/http"
-	"strconv"
-	"sync"
+
+	"gorono/internal/memos"
+	"gorono/internal/middlas"
+	"gorono/internal/models"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
-type gauge float64
-type counter int64
-type MemStorage struct {
-	gau    map[string]gauge
-	count  map[string]counter
-	mutter sync.RWMutex
-}
+type Metrics = memos.Metrics
+type MemStorage = memos.MemoryStorageStruct
 
-var memStor MemStorage
 var host = "localhost:8080"
+var sugar zap.SugaredLogger
+
+var ctx context.Context
+
+var inter models.Inter // 	= memStor OR dbStorage
 
 func main() {
-	if err := foa4Server(); err != nil {
+
+	if err := InitServer(); err != nil {
 		log.Println(err, " no success for foa4Server() ")
 		return
 	}
 
-	memStor = MemStorage{
-		gau:   make(map[string]gauge),
-		count: make(map[string]counter),
+	if reStore {
+		_ = inter.LoadMS(fileStorePath)
+	}
+
+	if storeInterval > 0 {
+		go inter.Saver(fileStorePath, storeInterval)
 	}
 
 	if err := run(); err != nil {
@@ -40,92 +57,32 @@ func main() {
 func run() error {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", treatMetric).Methods("POST")
-	router.HandleFunc("/value/{metricType}/{metricName}", getMetric).Methods("GET")
-	router.HandleFunc("/", getAllMetrix).Methods("GET")
-	router.HandleFunc("/", badPost).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", PutMetric).Methods("POST")
+	router.HandleFunc("/update/", PutJSONMetric).Methods("POST")
+	router.HandleFunc("/updates/", Buncheras).Methods("POST")
+	router.HandleFunc("/value/{metricType}/{metricName}", GetMetric).Methods("GET")
+	router.HandleFunc("/value/", GetJSONMetric).Methods("POST")
+	router.HandleFunc("/", GetAllMetrix).Methods("GET")
+	router.HandleFunc("/", BadPost).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/ping", DBPinger).Methods("GET")
+
+	router.Use(middlas.GzipHandleEncoder)
+	router.Use(middlas.GzipHandleDecoder)
+	router.Use(middlas.WithLogging)
 
 	return http.ListenAndServe(host, router)
 }
 
-func badPost(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
-	rwr.WriteHeader(http.StatusNotFound)
-	fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
-}
+/*
+metricstest -test.v -test.run="^TestIteration11[AB]*$" ^
+-binary-path=cmd/server/server.exe -source-path=cmd/server/ ^
+-agent-binary-path=cmd/agent/agent.exe ^
+-server-port=8080 -file-storage-path=goshran.txt ^
+-database-dsn=postgres://postgres:passwordas@localhost:5432/postgres
 
-func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
-	if req.URL.Path != "/" { // if GET with wrong arguments structure
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-		return
-	}
-	rwr.WriteHeader(http.StatusOK)
-	memStor.mutter.RLock() // <---- MUTEX
-	defer memStor.mutter.RUnlock()
-	for nam, val := range memStor.gau {
-		flo := strconv.FormatFloat(float64(val), 'f', -1, 64) // -1 - to remove zeroes tail
-		fmt.Fprintf(rwr, "Gauge Metric name   %20s\t\tvalue\t%s\n", nam, flo)
-	}
-	for nam, val := range memStor.count {
-		fmt.Fprintf(rwr, "Counter Metric name %20s\t\tvalue\t%d\n", nam, val)
-	}
-}
-func getMetric(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
-	vars := mux.Vars(req)
-	val := "badly" // does not matter what initial value, could be "var val string"
-	metricType := vars["metricType"]
-	metricName := vars["metricName"]
-	if metricType != "gauge" && metricType != "counter" {
-		rwr.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	var err error
-	if metricType == "gauge" {
-		err = memStor.getGaugeValue(metricName, &val)
-	} else { //if metricType == "counter" {
-		err = memStor.getCounterValue(metricName, &val)
-	}
-	if err == nil {
-		rwr.WriteHeader(http.StatusOK)
-		fmt.Fprint(rwr, val)
-	} else {
-		rwr.WriteHeader(http.StatusNotFound)
-		log.Printf("BadRequest, No value for %s of %s type", metricName, metricType)
-	}
-}
 
-func treatMetric(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/plain")
-	vars := mux.Vars(req)
-	rwr.Header().Set("Content-Type", "text/plain")
-	metricType := vars["metricType"]
-	metricName := vars["metricName"]
-	metricValue := vars["metricValue"]
-	if metricValue == "" {
-		rwr.WriteHeader(http.StatusNotFound)
-		return
-	}
-	if metricType != "gauge" && metricType != "counter" {
-		rwr.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if metricType == "counter" {
-		value, err := strconv.ParseInt(metricValue, 10, 64)
-		if err != nil {
-			rwr.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		memStor.addCounter(metricName, counter(value))
-	} else { //	if metricType == "gauge" {
-		value, err := strconv.ParseFloat(metricValue, 64)
-		if err != nil {
-			rwr.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		memStor.addGauge(metricName, gauge(value))
-	}
-	rwr.WriteHeader(http.StatusOK)
-}
+metricstest -test.v -test.run="^TestIteration1[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/
+
+go run . -d=postgres://postgres:passwordas@localhost:5432/postgres
+
+*/
