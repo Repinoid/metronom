@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"gorono/internal/basis"
 	"gorono/internal/models"
@@ -9,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
 )
 
 func BadPost(rwr http.ResponseWriter, req *http.Request) {
@@ -126,32 +124,32 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func purePinger(rwr http.ResponseWriter, req *http.Request) {
-	ctx := context.Background()
-	db, err := pgx.Connect(ctx, dbEndPoint)
+func DBPinger(rwr http.ResponseWriter, req *http.Request) {
+
+	err := inter.Ping(ctx, dbEndPoint)
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)
-		//		log.Printf("Open DB error is %v\n", err)
-		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
-		return
-	}
-	defer db.Close(ctx)
-	err = db.Ping(ctx)
-	if err != nil {
-		rwr.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
+		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		return
 	}
 	rwr.WriteHeader(http.StatusOK)
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
 }
 
-// func DBPinger(rwr http.ResponseWriter, req *http.Request) {
-
-// 	err := inter.Ping(ctx)
+// func purePinger(rwr http.ResponseWriter, req *http.Request) {
+// 	ctx := context.Background()
+// 	db, err := pgx.Connect(ctx, dbEndPoint)
 // 	if err != nil {
 // 		rwr.WriteHeader(http.StatusInternalServerError)
-// 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+// 		//		log.Printf("Open DB error is %v\n", err)
+// 		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
+// 		return
+// 	}
+// 	defer db.Close(ctx)
+// 	err = db.Ping(ctx)
+// 	if err != nil {
+// 		rwr.WriteHeader(http.StatusInternalServerError)
+// 		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
 // 		return
 // 	}
 // 	rwr.WriteHeader(http.StatusOK)

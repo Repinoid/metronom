@@ -40,12 +40,19 @@ func run() error {
 	metroBarn := make(chan []models.Metrics, chanCap)
 	go metrixIN(metroBarn)
 
+	
+	fenix := make(chan struct{})
 	for w := 1; w <= rabNum; w++ {
-		go bolda(metroBarn)
+		go bolda(metroBarn, fenix)
 	}
-	stopper := make(chan<- struct{})
-	stopper <- struct{}{}
-	return nil
+	for {
+		fenix <-struct{}{}	// блокируем канал пока балда не прочитает из него при своём завершении по ошибке
+		go bolda(metroBarn, fenix)	// нанимаем нового
+	}
+
+	// stopper := make(chan<- struct{})
+	// stopper <- struct{}{}
+	//return nil
 }
 
 // получает банчи метрик и складывает в barn
@@ -70,12 +77,13 @@ func metrixIN(metroBarn chan<- []models.Metrics) {
 	}
 }
 
-// работник отсылает банчи метрик на сервер
-func bolda(metroBarn <-chan []models.Metrics) {
+// работник отсылает банчи метрик на сервер, феникс - канал для подачи сигнала о завершении по ошибке
+func bolda(metroBarn <-chan []models.Metrics, fenix <-chan struct{}) {
 	for {
 		bunch := <-metroBarn
 		marshalledBunch, err := json.Marshal(bunch)
 		if err != nil {
+			<-fenix	// в случае ошибки читаем из феникса, разблокируя канал и выходим
 			return
 		}
 		var haHex string
@@ -84,6 +92,7 @@ func bolda(metroBarn <-chan []models.Metrics) {
 
 			coded, err := privacy.EncryptB2B(marshalledBunch, keyB[:])
 			if err != nil {
+				<-fenix
 				return
 			}
 			ha := privacy.MakeHash(nil, coded, keyB[:])
@@ -92,6 +101,7 @@ func bolda(metroBarn <-chan []models.Metrics) {
 		}
 		compressedBunch, err := middlas.Pack2gzip(marshalledBunch)
 		if err != nil {
+			<-fenix
 			return
 		}
 

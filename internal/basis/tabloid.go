@@ -7,9 +7,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	_ "database/sql"
+	//_ "database/sql"
 
-	_ "github.com/lib/pq"
+	//_ "github.com/lib/pq"
 
 	"gorono/internal/models"
 )
@@ -178,8 +178,9 @@ func (dataBase *DBstruct) SaveMS(fnam string) error {
 func (dataBase *DBstruct) Saver(fnam string, i int) error {
 	return nil
 }
-func (dataBase *DBstruct) Ping(ctx context.Context) error {
-	err := dataBase.DB.Ping(ctx)
+
+func (dataBase *DBstruct) Ping(ctx context.Context, gag string) error {
+	err := dataBase.DB.Ping(ctx)	// база то открыта ... 
 	if err != nil {
 		log.Printf("No PING  err %+v\n", err)
 		return fmt.Errorf("no ping %w", err)

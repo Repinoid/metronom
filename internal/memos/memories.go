@@ -11,6 +11,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type MemoryStorageStruct struct {
@@ -187,9 +189,19 @@ func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error
 		}
 	}
 }
-func (memorial *MemoryStorageStruct) Ping(ctx context.Context) error {
-	//	log.Println(" Skotobaza closed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	return fmt.Errorf(" Skotobaza closed")
+func (memorial *MemoryStorageStruct) Ping(ctx context.Context, dbEndPoint string) error {
+	db, err := pgx.Connect(ctx, dbEndPoint)
+	if err != nil {
+		log.Println(" Skotobaza closed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		return err
+	}
+	defer db.Close(ctx)	// при пинге из активного memory storage соединяемся с базой с нуля, пингуем и закрываем
+	err = db.Ping(ctx)
+	if err != nil {
+		log.Println(" Skotobaza closed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		return err
+	}
+	return nil
 }
 func (memorial *MemoryStorageStruct) GetName() string {
 	return "Memorial"
