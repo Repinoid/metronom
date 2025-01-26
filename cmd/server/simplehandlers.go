@@ -136,22 +136,3 @@ func DBPinger(rwr http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
 }
 
-// func purePinger(rwr http.ResponseWriter, req *http.Request) {
-// 	ctx := context.Background()
-// 	db, err := pgx.Connect(ctx, dbEndPoint)
-// 	if err != nil {
-// 		rwr.WriteHeader(http.StatusInternalServerError)
-// 		//		log.Printf("Open DB error is %v\n", err)
-// 		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
-// 		return
-// 	}
-// 	defer db.Close(ctx)
-// 	err = db.Ping(ctx)
-// 	if err != nil {
-// 		rwr.WriteHeader(http.StatusInternalServerError)
-// 		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
-// 		return
-// 	}
-// 	rwr.WriteHeader(http.StatusOK)
-// 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
-// }
