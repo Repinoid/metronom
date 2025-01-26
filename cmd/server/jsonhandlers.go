@@ -36,17 +36,16 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		sugar.Debugf("json.Unmarshal %+v err %+v\n", metr, err)
 		return
 	}
-	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr)
+	err = basis.CommonMetricWrapper(inter.GetMetric)(ctx, &metr, nil)
 	if err == nil { // if ништяк
 		rwr.WriteHeader(http.StatusOK)
-		json.NewEncoder(rwr).Encode(metr)
+		json.NewEncoder(rwr).Encode(metr) // return marshalled metric
 		return
 	}
 
 	//sugar.Debugf("after inter.GetMetric %+v err %+v\n", metr, err)
 
 	if strings.Contains(err.Error(), "unknown metric") {
-		//rwr.WriteHeader(444) // неизвестной метрики сервер должен возвращать http.StatusNotFound.
 		rwr.WriteHeader(http.StatusNotFound) // неизвестной метрики сервер должен возвращать http.StatusNotFound.
 		fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 		return
@@ -80,15 +79,14 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	err = basis.PutMetricWrapper(inter.PutMetric)(ctx, &metr)
+	err = basis.CommonMetricWrapper(inter.PutMetric)(ctx, &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		sugar.Debugf("PutMetricWrapper %+v\n", metr)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	metrix := Metrics{ID: metr.ID, MType: metr.MType}
-	metr, err = basis.GetMetricWrapper(inter.GetMetric)(ctx, &metrix) //inter.GetMetric(ctx, &metr)
+	err = basis.CommonMetricWrapper(inter.GetMetric)(ctx, &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		sugar.Debugf("GetMetricWrapper %+v\n", metr)
@@ -96,7 +94,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	rwr.WriteHeader(http.StatusOK)
-	json.NewEncoder(rwr).Encode(metr)
+	json.NewEncoder(rwr).Encode(metr) // return marshalled metric
 
 	if storeInterval == 0 {
 		_ = inter.SaveMS(fileStorePath)
@@ -122,7 +120,8 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! bunch decode  err %+v\n", err)
 		return
 	}
-	err = basis.PutAllMetricsWrapper(inter.PutAllMetrics)(ctx, &metras)
+
+	err = basis.CommonMetricWrapper(inter.PutAllMetrics)(ctx, nil, &metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
@@ -151,7 +150,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 func CryptoHandleDecoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
 
-		if haInHeader := req.Header.Get("HashSHA256"); haInHeader != "" {
+		if haInHeader := req.Header.Get("HashSHA256"); haInHeader != "" { // если есть ключ переопределить req
 			telo, err := io.ReadAll(req.Body)
 			if err != nil {
 				rwr.WriteHeader(http.StatusBadRequest)
@@ -166,7 +165,7 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 
 			log.Printf("%s from KEY %s\n%s from Header\n", haHex, key, haInHeader)
 
-			if haHex != haInHeader {
+			if haHex != haInHeader { // несовпадение хешей вычисленного по ключу и переданного в header
 				rwr.WriteHeader(http.StatusBadRequest)
 				fmt.Fprintf(rwr, `{"wrong hash":"%s"}`, haInHeader)
 				return
@@ -182,7 +181,7 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 				io.WriteString(rwr, err.Error())
 				return
 			}
-			for name := range req.Header {
+			for name := range req.Header { // cкопировать поля header
 				hea := req.Header.Get(name)
 				newReq.Header.Add(name, hea)
 			}

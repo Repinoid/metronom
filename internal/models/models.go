@@ -16,10 +16,10 @@ type Gauge float64
 type Counter int64
 
 type Inter interface {
-	GetMetric(ctx context.Context, metr *Metrics) (Metrics, error)
-	PutMetric(ctx context.Context, metr *Metrics) error
-	GetAllMetrics(ctx context.Context) (*[]Metrics, error)
-	PutAllMetrics(ctx context.Context, metras *[]Metrics) error
+	GetMetric(ctx context.Context, metr *Metrics, metras *[]Metrics) error
+	PutMetric(ctx context.Context, metr *Metrics, metras *[]Metrics) error
+	GetAllMetrics(ctx context.Context, metr *Metrics, metras *[]Metrics) error
+	PutAllMetrics(ctx context.Context, metr *Metrics, metras *[]Metrics) error
 	Ping(ctx context.Context, dbepnt string) error
 	LoadMS(fnam string) error
 	SaveMS(fnam string) error

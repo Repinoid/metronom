@@ -23,8 +23,8 @@ func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-
-	metras, err := basis.GetAllMetricsWrapper(inter.GetAllMetrics)(ctx)
+	metras := []Metrics{}
+	err := basis.CommonMetricWrapper(inter.GetAllMetrics)(ctx, nil, &metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -32,7 +32,7 @@ func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	}
 
 	rwr.WriteHeader(http.StatusOK)
-	for _, metr := range *metras {
+	for _, metr := range metras {
 		switch metr.MType {
 		case "gauge":
 			flo := strconv.FormatFloat(float64(*metr.Value), 'f', -1, 64) // -1 - to remove zeroes tail
@@ -49,8 +49,8 @@ func GetMetric(rwr http.ResponseWriter, req *http.Request) {
 	metricType := vars["metricType"]
 	metricName := vars["metricName"]
 	metr := models.Metrics{ID: metricName, MType: metricType}
-	metr, err := basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr) //inter.GetMetric(ctx, &metr)
-	if err != nil || !models.IsMetricsOK(metr) {                     // if no such metric, type+name
+	err := basis.CommonMetricWrapper(inter.GetMetric)(ctx, &metr, nil)
+	if err != nil || !models.IsMetricsOK(metr) { // if no such metric, type+name
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"wrong metric name":"%s"}`, metricName)
 		return
@@ -91,7 +91,6 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		metr = models.Metrics{ID: metricName, MType: "counter", Delta: &out}
-	//	basis.PutMetricWrapper(inter.PutMetric)(ctx, &metr) //inter.PutMetric(ctx, &metr)
 	case "gauge":
 		out, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
@@ -105,8 +104,8 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	basis.PutMetricWrapper(inter.PutMetric)(ctx, &metr)              //inter.PutMetric(ctx, &metr)
-	metr, err := basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr) // inter.GetMetric(ctx, &metr)
+	basis.CommonMetricWrapper(inter.PutMetric)(ctx, &metr, nil)
+	err := basis.CommonMetricWrapper(inter.GetMetric)(ctx, &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -135,4 +134,3 @@ func DBPinger(rwr http.ResponseWriter, req *http.Request) {
 	rwr.WriteHeader(http.StatusOK)
 	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
 }
-
