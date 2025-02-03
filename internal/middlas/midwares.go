@@ -56,7 +56,7 @@ func WithLogging(next http.Handler) http.Handler {
 		defer logger.Sync()
 		sugar = *logger.Sugar()
 		sugar.Infoln(
-			"uri", r.RequestURI,
+			"uri", r.URL.Path, // какой именно эндпоинт был дернут
 			"method", r.Method,
 			"status", responseData.status, // получаем перехваченный код статуса ответа
 			"duration", duration,
@@ -115,8 +115,6 @@ func GzipHandleDecoder(next http.Handler) http.Handler {
 		next.ServeHTTP(rwr, req)
 	})
 }
-
-
 
 /*
 curl localhost:8080/update/ -H "Content-Type":"application/json" -d "{\"type\":\"gauge\",\"id\":\"nam\",\"value\":77}"
