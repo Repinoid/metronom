@@ -29,6 +29,7 @@ type Metrics = memos.Metrics
 type MemStorage = memos.MemoryStorageStruct
 
 var host = "localhost:8080"
+
 var sugar zap.SugaredLogger
 
 var ctx context.Context
