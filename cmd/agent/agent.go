@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"gorono/internal/memos"
@@ -62,10 +63,12 @@ func metrixIN(metroBarn chan<- []models.Metrics) {
 			memStorage = *memos.GetMetrixFromOS()
 			addMetrix := *memos.GetMoreMetrix()
 			memStorage = append(memStorage, addMetrix...)
-			cunt++
+			atomic.AddInt64(&cunt, 1) //			cunt++
+
 			for ind, metr := range memStorage {
-				if metr.ID == "PollCount" && metr.MType == "counter" {
-					memStorage[ind].Delta = &cunt // в сам memStorage, metr - копия
+				if metr.ID == "PollCount" && metr.MType == "counter" {	// search for PollCount metric
+					cu := atomic.LoadInt64(&cunt)
+					memStorage[ind].Delta = &cu // memStorage[ind].Delta = cunt
 					break
 				}
 			}
@@ -128,7 +131,8 @@ func bolda(metroBarn <-chan []models.Metrics, fenix <-chan struct{}) {
 			SetDoNotParseResponse(false).
 			Post("/updates/") // slash on the tile
 		if resp.StatusCode() == http.StatusOK { // при успешной отправке метрик обнуляем cчётчик
-			cunt = 0
+			atomic.StoreInt64(&cunt, 0)		//	cunt = 0
+			
 		}
 
 		log.Printf("AGENT responce from server %+v\n", resp.StatusCode())
