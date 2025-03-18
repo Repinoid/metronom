@@ -126,7 +126,7 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 
 func DBPinger(rwr http.ResponseWriter, req *http.Request) {
 
-	err := models.Inter.Ping(req.Context(), models.DbEndPoint)
+	err := models.Inter.Ping(req.Context(), models.DBEndPoint)
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)

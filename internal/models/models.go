@@ -46,6 +46,6 @@ var (
 	StoreInterval        = 300
 	FileStorePath        = "./goshran.txt"
 	ReStore              = true
-	DbEndPoint           = ""
+	DBEndPoint           = ""
 	Key           string = ""
 )

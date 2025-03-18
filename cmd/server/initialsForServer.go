@@ -14,8 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-
-
 func InitServer() error {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
@@ -47,7 +45,7 @@ func InitServer() error {
 	}
 	enva, exists = os.LookupEnv("DATABASE_DSN")
 	if exists {
-		models.DbEndPoint = enva
+		models.DBEndPoint = enva
 	}
 	enva, exists = os.LookupEnv("RESTORE")
 	if exists {
@@ -65,7 +63,7 @@ func InitServer() error {
 	var keyFlag string
 
 	flag.StringVar(&keyFlag, "k", models.Key, "KEY")
-	flag.StringVar(&dbFlag, "d", models.DbEndPoint, "Data Base endpoint")
+	flag.StringVar(&dbFlag, "d", models.DBEndPoint, "Data Base endpoint")
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", models.FileStorePath, "Only -a={host:port} flag is allowed here")
 	storeIntervalFlag := flag.Int("i", models.StoreInterval, "storeInterval")
@@ -89,25 +87,25 @@ func InitServer() error {
 		models.ReStore = *restoreFlag
 	}
 	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
-		models.DbEndPoint = dbFlag
+		models.DBEndPoint = dbFlag
 	}
 	if _, exists := os.LookupEnv("KEY"); !exists {
 		models.Key = keyFlag
 	}
 	memStor := memos.InitMemoryStorage()
 
-	if models.DbEndPoint == "" {
+	if models.DBEndPoint == "" {
 		log.Println("No base in Env variable and command line argument")
 		models.Inter = memStor // если базы нет, подключаем in memory Storage
 		return nil
 	}
 
 	ctx = context.Background()
-	dbStorage, err := basis.InitDBStorage(ctx, models.DbEndPoint)
+	dbStorage, err := basis.InitDBStorage(ctx, models.DBEndPoint)
 
 	if err != nil {
 		models.Inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
-		log.Printf("Can't connect to DB %s\n", models.DbEndPoint)
+		log.Printf("Can't connect to DB %s\n", models.DBEndPoint)
 		return nil
 	}
 	models.Inter = dbStorage // data base as Metric Storage
