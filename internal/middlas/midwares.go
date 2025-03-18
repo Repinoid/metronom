@@ -2,13 +2,11 @@ package middlas
 
 import (
 	"compress/gzip"
+	"gorono/internal/models"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 type responseData struct {
@@ -47,13 +45,13 @@ func WithLogging(next http.Handler) http.Handler {
 		//		origFunc(&lw, r) // обслуживание оригинального запроса
 
 		duration := time.Since(start)
-		logger, err := zap.NewDevelopment()
-		if err != nil {
-			log.Println("cannot initialize zap")
-		}
-		defer logger.Sync()
-		sugar := *logger.Sugar()
-		sugar.Infoln(
+		// logger, err := zap.NewDevelopment()
+		// if err != nil {
+		// 	log.Println("cannot initialize zap")
+		// }
+		// defer logger.Sync()
+		//		models.Sugar = *logger.Sugar()
+		models.Sugar.Infoln(
 			"uri", r.URL.Path, // какой именно эндпоинт был дернут
 			"method", r.Method,
 			"status", responseData.status, // получаем перехваченный код статуса ответа

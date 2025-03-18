@@ -1,8 +1,9 @@
-package main
+package handlera
 
 import (
 	"fmt"
 	"gorono/internal/basis"
+	"gorono/internal/memos"
 	"gorono/internal/models"
 	"net/http"
 	"strconv"
@@ -23,8 +24,8 @@ func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	metras := []Metrics{}
-	err := basis.CommonMetricWrapper(inter.GetAllMetrics)(ctx, nil, &metras)
+	metras := []memos.Metrics{}
+	err := basis.CommonMetricWrapper(models.Inter.GetAllMetrics)(req.Context(), nil, &metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -49,7 +50,7 @@ func GetMetric(rwr http.ResponseWriter, req *http.Request) {
 	metricType := vars["metricType"]
 	metricName := vars["metricName"]
 	metr := models.Metrics{ID: metricName, MType: metricType}
-	err := basis.CommonMetricWrapper(inter.GetMetric)(ctx, &metr, nil)
+	err := basis.CommonMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err != nil || !models.IsMetricsOK(metr) { // if no such metric, type+name
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"wrong metric name":"%s"}`, metricName)
@@ -104,8 +105,8 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	basis.CommonMetricWrapper(inter.PutMetric)(ctx, &metr, nil)
-	err := basis.CommonMetricWrapper(inter.GetMetric)(ctx, &metr, nil)
+	basis.CommonMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
+	err := basis.CommonMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -118,14 +119,14 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 	case "counter":
 		fmt.Fprint(rwr, *metr.Delta)
 	}
-	if storeInterval == 0 {
-		_ = inter.SaveMS(fileStorePath)
+	if models.StoreInterval == 0 {
+		_ = models.Inter.SaveMS(models.FileStorePath)
 	}
 }
 
 func DBPinger(rwr http.ResponseWriter, req *http.Request) {
 
-	err := inter.Ping(ctx, dbEndPoint)
+	err := models.Inter.Ping(req.Context(), models.DbEndPoint)
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)

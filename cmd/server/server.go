@@ -17,24 +17,22 @@ import (
 	"log"
 	"net/http"
 
+	"gorono/internal/handlera"
 	"gorono/internal/memos"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
 
 	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 )
 
-type Metrics = memos.Metrics
+//type Metrics = memos.Metrics
 type MemStorage = memos.MemoryStorageStruct
 
 var host = "localhost:8080"
 
-var sugar zap.SugaredLogger
-
 var ctx context.Context
 
-var inter models.Inter // 	= memStor OR dbStorage
+// var models.Inter models.Inter // 	= memStor OR dbStorage
 
 func main() {
 
@@ -43,12 +41,12 @@ func main() {
 		return
 	}
 
-	if reStore {
-		_ = inter.LoadMS(fileStorePath)
+	if models.ReStore {
+		_ = models.Inter.LoadMS(models.FileStorePath)
 	}
 
-	if storeInterval > 0 {
-		go inter.Saver(fileStorePath, storeInterval)
+	if models.StoreInterval > 0 {
+		go models.Inter.Saver(models.FileStorePath, models.StoreInterval)
 	}
 
 	if err := run(); err != nil {
@@ -59,19 +57,19 @@ func main() {
 func run() error {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", PutMetric).Methods("POST")
-	router.HandleFunc("/update/", PutJSONMetric).Methods("POST")
-	router.HandleFunc("/updates/", Buncheras).Methods("POST")
-	router.HandleFunc("/value/{metricType}/{metricName}", GetMetric).Methods("GET")
-	router.HandleFunc("/value/", GetJSONMetric).Methods("POST")
-	router.HandleFunc("/", GetAllMetrix).Methods("GET")
-	router.HandleFunc("/", BadPost).Methods("POST") // if POST with wrong arguments structure
-	router.HandleFunc("/ping", DBPinger).Methods("GET")
+	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", handlera.PutMetric).Methods("POST")
+	router.HandleFunc("/update/", handlera.PutJSONMetric).Methods("POST")
+	router.HandleFunc("/updates/", handlera.Buncheras).Methods("POST")
+	router.HandleFunc("/value/{metricType}/{metricName}", handlera.GetMetric).Methods("GET")
+	router.HandleFunc("/value/", handlera.GetJSONMetric).Methods("POST")
+	router.HandleFunc("/", handlera.GetAllMetrix).Methods("GET")
+	router.HandleFunc("/", handlera.BadPost).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/ping", handlera.DBPinger).Methods("GET")
 
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
 	router.Use(middlas.WithLogging)
-	router.Use(CryptoHandleDecoder)
+	router.Use(handlera.CryptoHandleDecoder)
 
 	return http.ListenAndServe(host, router)
 }

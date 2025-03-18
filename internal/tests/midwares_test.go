@@ -1,4 +1,4 @@
-package main
+package tests
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ import (
 
 func Test_gzipPutGet(t *testing.T) {
 	//initForTests()
-	InitServer()
+	main.InitServer()
 	type want struct {
 		code     int
 		response string
@@ -185,7 +185,7 @@ func thecap(rwr http.ResponseWriter, req *http.Request) { // хандлер дл
 // 		panic("cannot initialize zap")
 // 	}
 // 	defer logger.Sync()
-// 	sugar = *logger.Sugar()
+// 	models.Sugar = *logger.Sugar()
 
 // 	memStor = &MemStorage{
 // 		Gaugemetr: make(map[string]gauge),
@@ -195,15 +195,15 @@ func thecap(rwr http.ResponseWriter, req *http.Request) { // хандлер дл
 
 // 	if dbEndPoint == "" {
 // 		log.Println("No base in Env variable and command line argument")
-// 		inter = memStor // если базы нет, подключаем in memory Storage
+// 		models.Inter = memStor // если базы нет, подключаем in memory Storage
 // 		return
 // 	}
 // 	ctx = context.Background()
 // 	err = startDB(ctx, dbEndPoint)
 // 	if err != nil {
-// 		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
+// 		models.Inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
 // 		log.Printf("Can't connect to DB %s\n", dbEndPoint)
 // 		return
 // 	}
-// 	inter = dbStorage
+// 	models.Inter = dbStorage
 // }

@@ -1,4 +1,4 @@
-package main
+package handlera
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gorono/internal/basis"
+	"gorono/internal/memos"
 	"gorono/internal/models"
 	"gorono/internal/privacy"
 	"io"
@@ -14,6 +15,8 @@ import (
 	"net/http"
 	"strings"
 )
+
+type Metrics = memos.Metrics
 
 // /value/ handler
 func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
@@ -23,7 +26,7 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest) // с некорректным типом метрики или значением возвращать http.StatusBadRequest.
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-		sugar.Debugf("io.ReadAll %+v\n", err)
+		models.Sugar.Debugf("io.ReadAll %+v\n", err)
 		return
 	}
 	defer req.Body.Close()
@@ -33,17 +36,17 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest) // с некорректным  значением возвращать http.StatusBadRequest.
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-		sugar.Debugf("json.Unmarshal %+v err %+v\n", metr, err)
+		models.Sugar.Debugf("json.Unmarshal %+v err %+v\n", metr, err)
 		return
 	}
-	err = basis.CommonMetricWrapper(inter.GetMetric)(ctx, &metr, nil)
+	err = basis.CommonMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err == nil { // if ништяк
 		rwr.WriteHeader(http.StatusOK)
 		json.NewEncoder(rwr).Encode(metr) // return marshalled metric
 		return
 	}
 
-	//sugar.Debugf("after inter.GetMetric %+v err %+v\n", metr, err)
+	//models.Sugar.Debugf("after models.Inter.GetMetric %+v err %+v\n", metr, err)
 
 	if strings.Contains(err.Error(), "unknown metric") {
 		rwr.WriteHeader(http.StatusNotFound) // неизвестной метрики сервер должен возвращать http.StatusNotFound.
@@ -75,29 +78,29 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 
 	if !models.IsMetricsOK(metr) {
 		rwr.WriteHeader(http.StatusBadRequest)
-		sugar.Debugf("bad Metric %+v\n", metr)
+		models.Sugar.Debugf("bad Metric %+v\n", metr)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	err = basis.CommonMetricWrapper(inter.PutMetric)(ctx, &metr, nil)
+	err = basis.CommonMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
-		sugar.Debugf("PutMetricWrapper %+v\n", metr)
+		models.Sugar.Debugf("PutMetricWrapper %+v\n", metr)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	err = basis.CommonMetricWrapper(inter.GetMetric)(ctx, &metr, nil)
+	err = basis.CommonMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
-		sugar.Debugf("GetMetricWrapper %+v\n", metr)
+		models.Sugar.Debugf("GetMetricWrapper %+v\n", metr)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
 	rwr.WriteHeader(http.StatusOK)
 	json.NewEncoder(rwr).Encode(metr) // return marshalled metric
 
-	if storeInterval == 0 {
-		_ = inter.SaveMS(fileStorePath)
+	if models.StoreInterval == 0 {
+		_ = models.Inter.SaveMS(models.FileStorePath)
 	}
 }
 
@@ -106,7 +109,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-		sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! io.ReadAll(req.Body) err %+v\n", err)
+		models.Sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! io.ReadAll(req.Body) err %+v\n", err)
 		return
 	}
 	defer req.Body.Close()
@@ -117,25 +120,25 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-		sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! bunch decode  err %+v\n", err)
+		models.Sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! bunch decode  err %+v\n", err)
 		return
 	}
 
-	err = basis.CommonMetricWrapper(inter.PutAllMetrics)(ctx, nil, &metras)
+	err = basis.CommonMetricWrapper(models.Inter.PutAllMetrics)(req.Context(), nil, &metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-		sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Put   err %+v\n", err)
+		models.Sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Put   err %+v\n", err)
 		return
 	}
 
-	if key != "" {
-		keyB := md5.Sum([]byte(key)) //[]byte(key)
+	if models.Key != "" {
+		keyB := md5.Sum([]byte(models.Key)) //[]byte(key)
 		toencrypt, _ := json.Marshal(&metras)
 
 		coded, err := privacy.EncryptB2B(toencrypt, keyB[:])
 		if err != nil {
-			sugar.Debugf("encrypt   err %+v\n", err)
+			models.Sugar.Debugf("encrypt   err %+v\n", err)
 			return
 		}
 		ha := privacy.MakeHash(nil, coded, keyB[:])
@@ -159,11 +162,11 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 			}
 			defer req.Body.Close()
 
-			keyB := md5.Sum([]byte(key)) //[]byte(key)
+			keyB := md5.Sum([]byte(models.Key)) //[]byte(key)
 			ha := privacy.MakeHash(nil, telo, keyB[:])
 			haHex := hex.EncodeToString(ha)
 
-			log.Printf("%s from KEY %s\n%s from Header\n", haHex, key, haInHeader)
+			log.Printf("%s from KEY %s\n%s from Header\n", haHex, models.Key, haInHeader)
 
 			if haHex != haInHeader { // несовпадение хешей вычисленного по ключу и переданного в header
 				rwr.WriteHeader(http.StatusBadRequest)
