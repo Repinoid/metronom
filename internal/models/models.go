@@ -1,9 +1,13 @@
+// пакет определения типов
 package models
 
 import (
 	"context"
+
+	"go.uber.org/zap"
 )
 
+// struct - имя, тип, значение (ссылка на)
 type Metrics struct {
 	ID    string   `json:"id"`              // имя метрики
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
@@ -13,12 +17,14 @@ type Metrics struct {
 type Gauge float64
 type Counter int64
 
-type Inter interface {
-	GetMetric(ctx context.Context, metr *Metrics) (Metrics, error)
-	PutMetric(ctx context.Context, metr *Metrics) error
-	GetAllMetrics(ctx context.Context) (*[]Metrics, error)
-	PutAllMetrics(ctx context.Context, metras *[]Metrics) error
-	Ping(ctx context.Context) error
+var Inter Interferon
+
+type Interferon interface {
+	GetMetric(ctx context.Context, metr *Metrics, metras *[]Metrics) error
+	PutMetric(ctx context.Context, metr *Metrics, metras *[]Metrics) error
+	GetAllMetrics(ctx context.Context, metr *Metrics, metras *[]Metrics) error
+	PutAllMetrics(ctx context.Context, metr *Metrics, metras *[]Metrics) error
+	Ping(ctx context.Context, dbepnt string) error
 	LoadMS(fnam string) error
 	SaveMS(fnam string) error
 	Saver(fnam string, storeInterval int) error
@@ -34,3 +40,12 @@ func IsMetricsOK(metr Metrics) bool {
 	}
 	return true
 }
+
+var (
+	Sugar         zap.SugaredLogger
+	StoreInterval        = 300
+	FileStorePath        = "./goshran.txt"
+	ReStore              = true
+	DBEndPoint           = ""
+	Key           string = ""
+)

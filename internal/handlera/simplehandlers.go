@@ -1,16 +1,14 @@
-package main
+package handlera
 
 import (
-	"context"
 	"fmt"
 	"gorono/internal/basis"
+	"gorono/internal/memos"
 	"gorono/internal/models"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
 )
 
 func BadPost(rwr http.ResponseWriter, req *http.Request) {
@@ -26,8 +24,8 @@ func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-
-	metras, err := basis.GetAllMetricsWrapper(inter.GetAllMetrics)(ctx)
+	metras := []memos.Metrics{}
+	err := basis.RetryMetricWrapper(models.Inter.GetAllMetrics)(req.Context(), nil, &metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -35,7 +33,7 @@ func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	}
 
 	rwr.WriteHeader(http.StatusOK)
-	for _, metr := range *metras {
+	for _, metr := range metras {
 		switch metr.MType {
 		case "gauge":
 			flo := strconv.FormatFloat(float64(*metr.Value), 'f', -1, 64) // -1 - to remove zeroes tail
@@ -52,8 +50,8 @@ func GetMetric(rwr http.ResponseWriter, req *http.Request) {
 	metricType := vars["metricType"]
 	metricName := vars["metricName"]
 	metr := models.Metrics{ID: metricName, MType: metricType}
-	metr, err := basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr) //inter.GetMetric(ctx, &metr)
-	if err != nil || !models.IsMetricsOK(metr) {                     // if no such metric, type+name
+	err := basis.RetryMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
+	if err != nil || !models.IsMetricsOK(metr) { // if no such metric, type+name
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"wrong metric name":"%s"}`, metricName)
 		return
@@ -94,7 +92,6 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		metr = models.Metrics{ID: metricName, MType: "counter", Delta: &out}
-	//	basis.PutMetricWrapper(inter.PutMetric)(ctx, &metr) //inter.PutMetric(ctx, &metr)
 	case "gauge":
 		out, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
@@ -108,8 +105,8 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	basis.PutMetricWrapper(inter.PutMetric)(ctx, &metr)              //inter.PutMetric(ctx, &metr)
-	metr, err := basis.GetMetricWrapper(inter.GetMetric)(ctx, &metr) // inter.GetMetric(ctx, &metr)
+	basis.RetryMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
+	err := basis.RetryMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -122,46 +119,14 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 	case "counter":
 		fmt.Fprint(rwr, *metr.Delta)
 	}
-	if storeInterval == 0 {
-		_ = inter.SaveMS(fileStorePath)
+	if models.StoreInterval == 0 {
+		_ = models.Inter.SaveMS(models.FileStorePath)
 	}
 }
 
 func DBPinger(rwr http.ResponseWriter, req *http.Request) {
 
-	//db, err := sql.Open("pgx", dbEndPoint)
-
-	ctx := context.Background()
-	db, err := pgx.Connect(ctx, dbEndPoint)
-
-	//	log.Printf("Endpoint is %s\n", dbEndPoint)
-
-	if err != nil {
-		rwr.WriteHeader(http.StatusInternalServerError)
-		//		log.Printf("Open DB error is %v\n", err)
-		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
-		return
-	}
-	defer db.Close(ctx)
-
-	err = db.Ping(ctx)
-	if err != nil {
-		rwr.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(rwr, `{"status":"StatusInternalServerError"}`)
-		//	log.Printf("PING DB error is %v\n", err)
-		return
-	}
-	rwr.WriteHeader(http.StatusOK)
-	//log.Printf("AFTER PING DB error is %v\n", err)
-	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
-}
-
-func DBPingera(rwr http.ResponseWriter, req *http.Request) {
-	startt := time.Now()
-	defer func(t time.Time) { fmt.Printf("defer Ping time %v µs\n", time.Since(startt).Microseconds()) }(startt)
-
-	err := inter.Ping(ctx)
-	sugar.Debugf("Ping time %v µs-----------Inter is %s\n", time.Since(startt).Microseconds(), inter.GetName())
+	err := models.Inter.Ping(req.Context(), models.DBEndPoint)
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)

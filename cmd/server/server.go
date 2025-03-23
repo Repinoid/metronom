@@ -6,7 +6,8 @@ metricstest -test.v -test.run="^TestIteration10[AB]*$" ^
 -database-dsn=postgres://postgres:passwordas@localhost:5432/postgres
 
 
-curl localhost:8080/update/ -H "Content-Type":"application/json" -d "{\"type\":\"gauge\",\"id\":\"nam\",\"value\":77}"
+curl localhost:8080/update/ -H "Content-Type":"application/json" -d "{\"type\":\"counter\",\"id\":\"PollCount\",\"value\":77}"
+curl localhost:8080/value/ -H "Content-Type":"application/json" -d "{\"type\":\"counter\",\"id\":\"PollCount\"}"
 */
 
 package main
@@ -16,23 +17,24 @@ import (
 	"log"
 	"net/http"
 
+	"gorono/internal/handlera"
 	"gorono/internal/memos"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
 
+	_ "net/http/pprof"
+
 	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 )
 
-type Metrics = memos.Metrics
+// type Metrics = memos.Metrics
 type MemStorage = memos.MemoryStorageStruct
 
 var host = "localhost:8080"
-var sugar zap.SugaredLogger
 
 var ctx context.Context
 
-var inter models.Inter // 	= memStor OR dbStorage
+// var models.Inter models.Inter // 	= memStor OR dbStorage
 
 func main() {
 
@@ -41,12 +43,12 @@ func main() {
 		return
 	}
 
-	if reStore {
-		_ = inter.LoadMS(fileStorePath)
+	if models.ReStore {
+		_ = models.Inter.LoadMS(models.FileStorePath)
 	}
 
-	if storeInterval > 0 {
-		go inter.Saver(fileStorePath, storeInterval)
+	if models.StoreInterval > 0 {
+		go models.Inter.Saver(models.FileStorePath, models.StoreInterval)
 	}
 
 	if err := run(); err != nil {
@@ -57,19 +59,28 @@ func main() {
 func run() error {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", PutMetric).Methods("POST")
-	router.HandleFunc("/update/", PutJSONMetric).Methods("POST")
-	router.HandleFunc("/updates/", Buncheras).Methods("POST")
-	router.HandleFunc("/value/{metricType}/{metricName}", GetMetric).Methods("GET")
-	router.HandleFunc("/value/", GetJSONMetric).Methods("POST")
-	router.HandleFunc("/", GetAllMetrix).Methods("GET")
-	router.HandleFunc("/", BadPost).Methods("POST") // if POST with wrong arguments structure
-	router.HandleFunc("/ping", DBPinger).Methods("GET")
+	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", handlera.PutMetric).Methods("POST")
+	router.HandleFunc("/update/", handlera.PutJSONMetric).Methods("POST")
+	router.HandleFunc("/updates/", handlera.Buncheras).Methods("POST")
+	router.HandleFunc("/value/{metricType}/{metricName}", handlera.GetMetric).Methods("GET")
+	router.HandleFunc("/value/", handlera.GetJSONMetric).Methods("POST")
+	router.HandleFunc("/", handlera.GetAllMetrix).Methods("GET")
+	router.HandleFunc("/", handlera.BadPost).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/ping", handlera.DBPinger).Methods("GET")
+
+	// router.HandleFunc("/debug/pprof/", pprof.Index)
+	// router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	// router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	// router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	// router.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	//	router.HandleFunc("/debug/pprof/heap", pprof.Heap)
 
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
 	router.Use(middlas.WithLogging)
-	router.Use(CryptoHandleDecoder)
+	router.Use(handlera.CryptoHandleDecoder)
+
+	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
 	return http.ListenAndServe(host, router)
 }
@@ -84,6 +95,6 @@ metricstest -test.v -test.run="^TestIteration11[AB]*$" ^
 
 metricstest -test.v -test.run="^TestIteration1[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/
 
-go run . -d=postgres://postgres:passwordas@localhost:5432/postgres
+go run . -k=pass -d=postgres://postgres:passwordas@localhost:5432/forgo
 
 */

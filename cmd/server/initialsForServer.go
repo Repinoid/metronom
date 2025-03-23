@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gorono/internal/basis"
 	"gorono/internal/memos"
+	"gorono/internal/models"
 	"log"
 	"os"
 	"strconv"
@@ -13,19 +14,13 @@ import (
 	"go.uber.org/zap"
 )
 
-var storeInterval = 300
-var fileStorePath = "./goshran.txt"
-var reStore = true
-var dbEndPoint = ""
-var key string = ""
-
 func InitServer() error {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic("cannot initialize zap")
 	}
 	defer logger.Sync()
-	sugar = *logger.Sugar()
+	models.Sugar = *logger.Sugar()
 
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
@@ -35,27 +30,27 @@ func InitServer() error {
 	enva, exists := os.LookupEnv("STORE_INTERVAL")
 	if exists {
 		var err error
-		storeInterval, err = strconv.Atoi(enva)
+		models.StoreInterval, err = strconv.Atoi(enva)
 		if err != nil {
 			log.Printf("STORE_INTERVAL error value %s\t error %v", enva, err)
 		}
 	}
 	enva, exists = os.LookupEnv("KEY")
 	if exists {
-		key = enva
+		models.Key = enva
 	}
 	enva, exists = os.LookupEnv("FILE_STORAGE_PATH")
 	if exists {
-		fileStorePath = enva
+		models.FileStorePath = enva
 	}
 	enva, exists = os.LookupEnv("DATABASE_DSN")
 	if exists {
-		dbEndPoint = enva
+		models.DBEndPoint = enva
 	}
 	enva, exists = os.LookupEnv("RESTORE")
 	if exists {
 		var err error
-		reStore, err = strconv.ParseBool(enva)
+		models.ReStore, err = strconv.ParseBool(enva)
 		if err != nil {
 			log.Printf("RESTORE error value %s\t error %v", enva, err)
 		}
@@ -67,12 +62,12 @@ func InitServer() error {
 	var dbFlag string
 	var keyFlag string
 
-	flag.StringVar(&keyFlag, "k", key, "KEY")
-	flag.StringVar(&dbFlag, "d", dbEndPoint, "Data Base endpoint")
+	flag.StringVar(&keyFlag, "k", models.Key, "KEY")
+	flag.StringVar(&dbFlag, "d", models.DBEndPoint, "Data Base endpoint")
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
-	flag.StringVar(&fileStoreFlag, "f", fileStorePath, "Only -a={host:port} flag is allowed here")
-	storeIntervalFlag := flag.Int("i", storeInterval, "storeInterval")
-	restoreFlag := flag.Bool("r", reStore, "restore")
+	flag.StringVar(&fileStoreFlag, "f", models.FileStorePath, "Only -a={host:port} flag is allowed here")
+	storeIntervalFlag := flag.Int("i", models.StoreInterval, "storeInterval")
+	restoreFlag := flag.Bool("r", models.ReStore, "restore")
 
 	flag.Parse()
 
@@ -83,36 +78,36 @@ func InitServer() error {
 		host = hostFlag
 	}
 	if _, exists := os.LookupEnv("STORE_INTERVAL"); !exists {
-		storeInterval = *storeIntervalFlag
+		models.StoreInterval = *storeIntervalFlag
 	}
 	if _, exists := os.LookupEnv("FILE_STORAGE_PATH"); !exists {
-		fileStorePath = fileStoreFlag
+		models.FileStorePath = fileStoreFlag
 	}
 	if _, exists := os.LookupEnv("RESTORE"); !exists {
-		reStore = *restoreFlag
+		models.ReStore = *restoreFlag
 	}
 	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
-		dbEndPoint = dbFlag
+		models.DBEndPoint = dbFlag
 	}
 	if _, exists := os.LookupEnv("KEY"); !exists {
-		key = keyFlag
+		models.Key = keyFlag
 	}
 	memStor := memos.InitMemoryStorage()
 
-	if dbEndPoint == "" {
+	if models.DBEndPoint == "" {
 		log.Println("No base in Env variable and command line argument")
-		inter = memStor // если базы нет, подключаем in memory Storage
+		models.Inter = memStor // если базы нет, подключаем in memory Storage
 		return nil
 	}
 
 	ctx = context.Background()
-	dbStorage, err := basis.InitDBStorage(ctx, dbEndPoint)
+	dbStorage, err := basis.InitDBStorage(ctx, models.DBEndPoint)
 
 	if err != nil {
-		inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
-		log.Printf("Can't connect to DB %s\n", dbEndPoint)
+		models.Inter = memStor // если не удаётся подключиться к базе, подключаем in memory Storage
+		log.Printf("Can't connect to DB %s\n", models.DBEndPoint)
 		return nil
 	}
-	inter = dbStorage // data base as Metric Storage
+	models.Inter = dbStorage // data base as Metric Storage
 	return nil
 }

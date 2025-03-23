@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx/v5"
+	//	"github.com/jackc/pgx/v5"
 
-	_ "database/sql"
-
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"gorono/internal/models"
 )
@@ -17,12 +15,14 @@ import (
 type Metrics = models.Metrics
 
 type DBstruct struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
+	//	DB *pgx.Conn
 }
 
 func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 	dbStorage := &DBstruct{}
-	baza, err := pgx.Connect(ctx, dbEndPoint)
+	//baza, err := pgx.Connect(ctx, dbEndPoint)
+	baza, err := pgxpool.New(ctx, dbEndPoint)
 	if err != nil {
 		return nil, fmt.Errorf("can't connect to DB %s err %w", dbEndPoint, err)
 	}
@@ -34,7 +34,8 @@ func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 	return dbStorage, nil
 }
 
-func TableCreation(ctx context.Context, db *pgx.Conn) error {
+func TableCreation(ctx context.Context, db *pgxpool.Pool) error {
+	//func TableCreation(ctx context.Context, db *pgx.Conn) error {
 	//	crea := "DROP TABLE Counter;"
 	//	crea += "DROP TABLE Gauge;"
 	crea := "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
@@ -51,7 +52,7 @@ func TableCreation(ctx context.Context, db *pgx.Conn) error {
 }
 
 // -------------- put ONE metric to the table
-func (dataBase *DBstruct) PutMetric(ctx context.Context, metr *Metrics) error {
+func (dataBase *DBstruct) PutMetric(ctx context.Context, metr *Metrics, gag *[]Metrics) error {
 	if !models.IsMetricsOK(*metr) {
 		return fmt.Errorf("bad metric %+v", metr)
 	}
@@ -76,9 +77,9 @@ func (dataBase *DBstruct) PutMetric(ctx context.Context, metr *Metrics) error {
 }
 
 // ------ get ONE metric from the table
-func (dataBase *DBstruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics, error) {
+func (dataBase *DBstruct) GetMetric(ctx context.Context, metr *Metrics, gag *[]Metrics) error {
 	db := dataBase.DB
-	metrix := Metrics{ID: metr.ID, MType: metr.MType} // new pure Metrics to return, nil Delta & Value ptrs
+	//	metrix := Metrics{ID: metr.ID, MType: metr.MType} // new pure Metrics to return, nil Delta & Value ptrs
 	switch metr.MType {
 	case "gauge":
 		var flo float64 // here we scan Value
@@ -86,26 +87,26 @@ func (dataBase *DBstruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics
 		row := db.QueryRow(ctx, order, metr.ID)
 		err := row.Scan(&flo)
 		if err != nil {
-			return *metr, fmt.Errorf("unknown metric %+v", metr)
+			return fmt.Errorf("unknown metric %+v", metr)
 		}
-		metrix.Value = &flo
+		metr.Value = &flo
 	case "counter":
 		var inta int64 // here we scan Delta
 		order := "SELECT value FROM counter WHERE metricname = $1;"
 		row := db.QueryRow(ctx, order, metr.ID)
 		err := row.Scan(&inta)
 		if err != nil {
-			return *metr, fmt.Errorf("unknown metric %+v", metr)
+			return fmt.Errorf("unknown metric %+v", metr)
 		}
-		metrix.Delta = &inta
+		metr.Delta = &inta
 	default:
-		return *metr, fmt.Errorf("wrong type %s", metr.MType)
+		return fmt.Errorf("wrong type %s", metr.MType)
 	}
-	return metrix, nil
+	return nil
 }
 
 // ----------- transaction. PUT ALL metrics to the tables ----------------------
-func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) error {
+func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, gag *Metrics, metras *[]Metrics) error {
 	db := dataBase.DB
 	//func TableBuncher(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 	tx, err := db.Begin(ctx)
@@ -141,7 +142,7 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) 
 }
 
 // ------- get ALL metrics from the tables
-func (dataBase *DBstruct) GetAllMetrics(ctx context.Context) (*[]Metrics, error) {
+func (dataBase *DBstruct) GetAllMetrics(ctx context.Context, gag *Metrics, meS *[]Metrics) error {
 	db := dataBase.DB
 	//func TableGetAllTables(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 	zapros := `select 'counter' AS metrictype, metricname AS name, null AS value, value AS delta from counter
@@ -154,20 +155,22 @@ func (dataBase *DBstruct) GetAllMetrics(ctx context.Context) (*[]Metrics, error)
 
 	rows, err := db.Query(ctx, zapros)
 	if err != nil {
-		return nil, fmt.Errorf("error Query %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
+		return fmt.Errorf("error Query  %[1]w", err)
+		//		return fmt.Errorf("error Query %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
 	}
-	metras := []Metrics{}
+	//	metras := []Metrics{}
+	metras := *meS
 	for rows.Next() {
 		err = rows.Scan(&metr.MType, &metr.ID, &metr.Value, &metr.Delta)
 		if err != nil {
-			return nil, fmt.Errorf("error table Scan %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
+			return fmt.Errorf("error table Scan  %[1]w", err)
 		}
 		metras = append(metras, metr)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("err := rows.Err()  %w", err)
+		return fmt.Errorf("err := rows.Err()  %w", err)
 	}
-	return &metras, nil
+	return nil
 }
 func (dataBase *DBstruct) LoadMS(fnam string) error {
 	return nil
@@ -178,8 +181,9 @@ func (dataBase *DBstruct) SaveMS(fnam string) error {
 func (dataBase *DBstruct) Saver(fnam string, i int) error {
 	return nil
 }
-func (dataBase *DBstruct) Ping(ctx context.Context) error {
-	err := dataBase.DB.Ping(ctx)
+
+func (dataBase *DBstruct) Ping(ctx context.Context, gag string) error {
+	err := dataBase.DB.Ping(ctx) // база то открыта ...
 	if err != nil {
 		log.Printf("No PING  err %+v\n", err)
 		return fmt.Errorf("no ping %w", err)

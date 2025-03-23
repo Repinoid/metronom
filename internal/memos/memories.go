@@ -11,6 +11,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type MemoryStorageStruct struct {
@@ -31,7 +33,7 @@ func InitMemoryStorage() *MemoryStorageStruct {
 	return &memStor
 }
 
-func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics) error {
+func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics, gag *[]Metrics) error {
 	if !models.IsMetricsOK(*metr) {
 		return fmt.Errorf("bad metric %+v", metr)
 	}
@@ -48,33 +50,33 @@ func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metric
 	return nil
 }
 
-func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *Metrics) (Metrics, error) {
+func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *Metrics, gag *[]Metrics) error {
 	memorial.Mutter.RLock() // <---- MUTEX
 	defer memorial.Mutter.RUnlock()
-	metrix := Metrics{ID: metr.ID, MType: metr.MType} // new pure Metrics to return, nil Delta&Value ptrs
+	//	metrix := Metrics{ID: metr.ID, MType: metr.MType} // new pure Metrics to return, nil Delta&Value ptrs
 	switch metr.MType {
 	case "gauge":
 		if val, ok := memorial.Gaugemetr[metr.ID]; ok {
 			out := float64(val)
-			metrix.Value = &out
+			metr.Value = &out
 			break
 		}
-		return metrix, fmt.Errorf("unknown metric %+v", metr) //
+		return fmt.Errorf("unknown metric %+v", metr) //
 	case "counter":
 		if val, ok := memorial.Countmetr[metr.ID]; ok {
 			out := int64(val)
-			metrix.Delta = &out
+			metr.Delta = &out
 			break
 		}
-		return metrix, fmt.Errorf("unknown metric %+v", metr)
+		return fmt.Errorf("unknown metric %+v", metr)
 	default:
-		return metrix, fmt.Errorf("wrong type %s", metr.MType)
+		return fmt.Errorf("wrong type %s", metr.MType)
 	}
-	return metrix, nil
+	return nil
 }
 
 // --- from []Metrics to memory Storage
-func (memorial *MemoryStorageStruct) PutAllMetrics(ctx context.Context, metras *[]Metrics) error {
+func (memorial *MemoryStorageStruct) PutAllMetrics(ctx context.Context, gag *Metrics, metras *[]Metrics) error {
 	memorial.Mutter.Lock()
 	defer memorial.Mutter.Unlock()
 
@@ -96,12 +98,12 @@ func (memorial *MemoryStorageStruct) PutAllMetrics(ctx context.Context, metras *
 }
 
 // ----- from Memory Storage to []Metrics
-func (memorial *MemoryStorageStruct) GetAllMetrics(ctx context.Context) (*[]Metrics, error) {
+func (memorial *MemoryStorageStruct) GetAllMetrics(ctx context.Context, gag *Metrics, meS *[]Metrics) error {
 
 	memorial.Mutter.RLock()
 	defer memorial.Mutter.RUnlock()
 
-	metras := []Metrics{}
+	var metras []Metrics
 
 	for nam, val := range memorial.Countmetr {
 		out := int64(val)
@@ -113,7 +115,8 @@ func (memorial *MemoryStorageStruct) GetAllMetrics(ctx context.Context) (*[]Metr
 		metr := Metrics{ID: nam, MType: "gauge", Value: &out}
 		metras = append(metras, metr)
 	}
-	return &metras, nil
+	*meS = metras
+	return nil
 }
 
 // -------------------------------  FILERs ------------------------------------------
@@ -187,9 +190,19 @@ func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error
 		}
 	}
 }
-func (memorial *MemoryStorageStruct) Ping(ctx context.Context) error {
-	//	log.Println(" Skotobaza closed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	return fmt.Errorf(" Skotobaza closed")
+func (memorial *MemoryStorageStruct) Ping(ctx context.Context, dbEndPoint string) error {
+	db, err := pgx.Connect(ctx, dbEndPoint)
+	if err != nil {
+		log.Println(" Skotobaza closed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		return err
+	}
+	defer db.Close(ctx) // при пинге из активного memory storage соединяемся с базой с нуля, пингуем и закрываем
+	err = db.Ping(ctx)
+	if err != nil {
+		log.Println(" Skotobaza closed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		return err
+	}
+	return nil
 }
 func (memorial *MemoryStorageStruct) GetName() string {
 	return "Memorial"
