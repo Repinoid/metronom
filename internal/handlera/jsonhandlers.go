@@ -127,7 +127,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-		models.Sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! bunch decode  err %+v\n", err)
+		models.Sugar.Debugf("bunch decode  err %+v\n", err)
 		return
 	}
 
@@ -135,7 +135,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-		models.Sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Put   err %+v\n", err)
+		models.Sugar.Debugf(" Put   err %+v\n", err)
 		return
 	}
 

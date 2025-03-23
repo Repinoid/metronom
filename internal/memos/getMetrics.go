@@ -98,9 +98,6 @@ func MetrixUnMarhal(bunchOnMarsh []byte) (*[]models.Metrics, error) {
 		metricFields := strings.Split(metra, ",")
 
 		var metr = models.Metrics{}
-		// var flo float64
-		// var inta int64
-		// var err error
 		for _, m := range metricFields {
 			m = strings.TrimPrefix(m, "{")
 			m = strings.TrimSuffix(m, "}")
