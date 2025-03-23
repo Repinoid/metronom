@@ -25,7 +25,7 @@ func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 	metras := []memos.Metrics{}
-	err := basis.CommonMetricWrapper(models.Inter.GetAllMetrics)(req.Context(), nil, &metras)
+	err := basis.RetryMetricWrapper(models.Inter.GetAllMetrics)(req.Context(), nil, &metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -50,7 +50,7 @@ func GetMetric(rwr http.ResponseWriter, req *http.Request) {
 	metricType := vars["metricType"]
 	metricName := vars["metricName"]
 	metr := models.Metrics{ID: metricName, MType: metricType}
-	err := basis.CommonMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
+	err := basis.RetryMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err != nil || !models.IsMetricsOK(metr) { // if no such metric, type+name
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"wrong metric name":"%s"}`, metricName)
@@ -105,8 +105,8 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	basis.CommonMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
-	err := basis.CommonMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
+	basis.RetryMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
+	err := basis.RetryMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)

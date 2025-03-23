@@ -11,7 +11,6 @@ import (
 	"gorono/internal/models"
 	"gorono/internal/privacy"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -39,7 +38,7 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		models.Sugar.Debugf("json.Unmarshal %+v err %+v\n", metr, err)
 		return
 	}
-	err = basis.CommonMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
+	err = basis.RetryMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err == nil { // if ништяк
 		rwr.WriteHeader(http.StatusOK)
 		json.NewEncoder(rwr).Encode(metr) // return marshalled metric
@@ -82,14 +81,14 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	err = basis.CommonMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
+	err = basis.RetryMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		models.Sugar.Debugf("PutMetricWrapper %+v\n", metr)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	err = basis.CommonMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
+	err = basis.RetryMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		models.Sugar.Debugf("GetMetricWrapper %+v\n", metr)
@@ -114,9 +113,17 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
-	buf := bytes.NewBuffer(telo)
+	//var p fastjson.Parser
 	metras := []models.Metrics{}
-	err = json.NewDecoder(buf).Decode(&metras)
+
+	metras, err = memos.MetrixUnMarhal(telo)
+	// if err != nil {
+	// 	log.Fatalf("cannot parse json: %s", err)
+	// }
+
+	// buf := bytes.NewBuffer(telo)
+	// err = json.NewDecoder(buf).Decode(&metras)
+
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
@@ -124,7 +131,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = basis.CommonMetricWrapper(models.Inter.PutAllMetrics)(req.Context(), nil, &metras)
+	err = basis.RetryMetricWrapper(models.Inter.PutAllMetrics)(req.Context(), nil, &metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
@@ -166,7 +173,7 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 			ha := privacy.MakeHash(nil, telo, keyB[:])
 			haHex := hex.EncodeToString(ha)
 
-			log.Printf("%s from KEY %s\n%s from Header\n", haHex, models.Key, haInHeader)
+			//			log.Printf("%s from KEY %s\n%s from Header\n", haHex, models.Key, haInHeader)
 
 			if haHex != haInHeader { // несовпадение хешей вычисленного по ключу и переданного в header
 				rwr.WriteHeader(http.StatusBadRequest)

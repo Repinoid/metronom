@@ -3,6 +3,8 @@ package memos
 import (
 	"math/rand/v2"
 	"runtime"
+	"strconv"
+	"strings"
 
 	"gorono/internal/models"
 
@@ -81,4 +83,55 @@ func GetMetrixFromOS() *[]models.Metrics {
 		metrArray = append(metrArray, metr)
 	}
 	return &metrArray
+}
+
+func MetrixUnMarhal(bunchOnMarsh []byte) ([]Metrics, error) {
+	var metricArray []Metrics
+
+	metricString := string(bunchOnMarsh)
+
+	metricString = strings.TrimPrefix(metricString, "[")
+	metricString = strings.TrimSuffix(metricString, "]")
+	metrics := strings.Split(metricString, "},")
+
+	for _, metra := range metrics {
+		metricFields := strings.Split(metra, ",")
+
+		var metr = models.Metrics{}
+		var flo float64
+		var inta int64
+		var err error
+		for _, m := range metricFields {
+			m = strings.TrimPrefix(m, "{")
+			m = strings.TrimSuffix(m, "}")
+
+			field := strings.Split(m, ":")
+
+			field[0] = strings.TrimPrefix(field[0], "\"")
+			field[0] = strings.TrimSuffix(field[0], "\"")
+			field[1] = strings.TrimPrefix(field[1], "\"")
+			field[1] = strings.TrimSuffix(field[1], "\"")
+			switch field[0] {
+
+			case "id":
+				metr.ID = field[1]
+			case "type":
+				metr.MType = field[1]
+			case "value":
+				flo, err = strconv.ParseFloat(field[1], 64)
+				if err != nil {
+					return nil, err
+				}
+				metr.Value = &flo
+			case "delta":
+				inta, err = strconv.ParseInt(field[1], 10, 64)
+				if err != nil {
+					return nil, err
+				}
+				metr.Delta = &inta
+			}
+		}
+		metricArray = append(metricArray, metr)
+	}
+	return metricArray, nil
 }

@@ -22,10 +22,12 @@ import (
 	"gorono/internal/middlas"
 	"gorono/internal/models"
 
+	_ "net/http/pprof"
+
 	"github.com/gorilla/mux"
 )
 
-//type Metrics = memos.Metrics
+// type Metrics = memos.Metrics
 type MemStorage = memos.MemoryStorageStruct
 
 var host = "localhost:8080"
@@ -66,10 +68,19 @@ func run() error {
 	router.HandleFunc("/", handlera.BadPost).Methods("POST") // if POST with wrong arguments structure
 	router.HandleFunc("/ping", handlera.DBPinger).Methods("GET")
 
+	// router.HandleFunc("/debug/pprof/", pprof.Index)
+	// router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	// router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	// router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	// router.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	//	router.HandleFunc("/debug/pprof/heap", pprof.Heap)
+
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
 	router.Use(middlas.WithLogging)
 	router.Use(handlera.CryptoHandleDecoder)
+
+	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
 	return http.ListenAndServe(host, router)
 }
@@ -84,6 +95,6 @@ metricstest -test.v -test.run="^TestIteration11[AB]*$" ^
 
 metricstest -test.v -test.run="^TestIteration1[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/
 
-go run . -d=postgres://postgres:passwordas@localhost:5432/postgres
+go run . -k=pass -d=postgres://postgres:passwordas@localhost:5432/forgo
 
 */

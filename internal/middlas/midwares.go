@@ -42,15 +42,8 @@ func WithLogging(next http.Handler) http.Handler {
 			responseData:   responseData,
 		}
 		next.ServeHTTP(&lw, r)
-		//		origFunc(&lw, r) // обслуживание оригинального запроса
 
 		duration := time.Since(start)
-		// logger, err := zap.NewDevelopment()
-		// if err != nil {
-		// 	log.Println("cannot initialize zap")
-		// }
-		// defer logger.Sync()
-		//		models.Sugar = *logger.Sugar()
 		models.Sugar.Infoln(
 			"uri", r.URL.Path, // какой именно эндпоинт был дернут
 			"method", r.Method,

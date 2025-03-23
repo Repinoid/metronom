@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx/v5"
+	//	"github.com/jackc/pgx/v5"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"gorono/internal/models"
 )
@@ -13,12 +15,14 @@ import (
 type Metrics = models.Metrics
 
 type DBstruct struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
+	//	DB *pgx.Conn
 }
 
 func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 	dbStorage := &DBstruct{}
-	baza, err := pgx.Connect(ctx, dbEndPoint)
+	//baza, err := pgx.Connect(ctx, dbEndPoint)
+	baza, err := pgxpool.New(ctx, dbEndPoint)
 	if err != nil {
 		return nil, fmt.Errorf("can't connect to DB %s err %w", dbEndPoint, err)
 	}
@@ -30,7 +34,8 @@ func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 	return dbStorage, nil
 }
 
-func TableCreation(ctx context.Context, db *pgx.Conn) error {
+func TableCreation(ctx context.Context, db *pgxpool.Pool) error {
+	//func TableCreation(ctx context.Context, db *pgx.Conn) error {
 	//	crea := "DROP TABLE Counter;"
 	//	crea += "DROP TABLE Gauge;"
 	crea := "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
@@ -150,14 +155,15 @@ func (dataBase *DBstruct) GetAllMetrics(ctx context.Context, gag *Metrics, meS *
 
 	rows, err := db.Query(ctx, zapros)
 	if err != nil {
-		return fmt.Errorf("error Query %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
+		return fmt.Errorf("error Query  %[1]w", err)
+		//		return fmt.Errorf("error Query %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
 	}
 	//	metras := []Metrics{}
 	metras := *meS
 	for rows.Next() {
 		err = rows.Scan(&metr.MType, &metr.ID, &metr.Value, &metr.Delta)
 		if err != nil {
-			return fmt.Errorf("error table Scan %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
+			return fmt.Errorf("error table Scan  %[1]w", err)
 		}
 		metras = append(metras, metr)
 	}

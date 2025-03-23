@@ -103,7 +103,7 @@ func (memorial *MemoryStorageStruct) GetAllMetrics(ctx context.Context, gag *Met
 	memorial.Mutter.RLock()
 	defer memorial.Mutter.RUnlock()
 
-	metras := *meS
+	var metras []Metrics
 
 	for nam, val := range memorial.Countmetr {
 		out := int64(val)
@@ -115,6 +115,7 @@ func (memorial *MemoryStorageStruct) GetAllMetrics(ctx context.Context, gag *Met
 		metr := Metrics{ID: nam, MType: "gauge", Value: &out}
 		metras = append(metras, metr)
 	}
+	*meS = metras
 	return nil
 }
 
