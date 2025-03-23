@@ -85,8 +85,8 @@ func GetMetrixFromOS() *[]models.Metrics {
 	return &metrArray
 }
 
-func MetrixUnMarhal(bunchOnMarsh []byte) ([]Metrics, error) {
-	var metricArray []Metrics
+func MetrixUnMarhal(bunchOnMarsh []byte) (*[]models.Metrics, error) {
+	metricArray := new([]models.Metrics) // "new" - create on heap
 
 	metricString := string(bunchOnMarsh)
 
@@ -98,9 +98,9 @@ func MetrixUnMarhal(bunchOnMarsh []byte) ([]Metrics, error) {
 		metricFields := strings.Split(metra, ",")
 
 		var metr = models.Metrics{}
-		var flo float64
-		var inta int64
-		var err error
+		// var flo float64
+		// var inta int64
+		// var err error
 		for _, m := range metricFields {
 			m = strings.TrimPrefix(m, "{")
 			m = strings.TrimSuffix(m, "}")
@@ -118,20 +118,20 @@ func MetrixUnMarhal(bunchOnMarsh []byte) ([]Metrics, error) {
 			case "type":
 				metr.MType = field[1]
 			case "value":
-				flo, err = strconv.ParseFloat(field[1], 64)
+				flo, err := strconv.ParseFloat(field[1], 64)
 				if err != nil {
 					return nil, err
 				}
 				metr.Value = &flo
 			case "delta":
-				inta, err = strconv.ParseInt(field[1], 10, 64)
+				inta, err := strconv.ParseInt(field[1], 10, 64)
 				if err != nil {
 					return nil, err
 				}
 				metr.Delta = &inta
 			}
 		}
-		metricArray = append(metricArray, metr)
+		*metricArray = append(*metricArray, metr)
 	}
 	return metricArray, nil
 }

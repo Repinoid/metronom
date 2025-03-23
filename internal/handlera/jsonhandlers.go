@@ -114,9 +114,9 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	//var p fastjson.Parser
-	metras := []models.Metrics{}
+	//metras := []models.Metrics{}
 
-	metras, err = memos.MetrixUnMarhal(telo)
+	metras, err := memos.MetrixUnMarhal(telo) // own json decoder
 	// if err != nil {
 	// 	log.Fatalf("cannot parse json: %s", err)
 	// }
@@ -131,7 +131,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = basis.RetryMetricWrapper(models.Inter.PutAllMetrics)(req.Context(), nil, &metras)
+	err = basis.RetryMetricWrapper(models.Inter.PutAllMetrics)(req.Context(), nil, metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
@@ -141,7 +141,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 
 	if models.Key != "" {
 		keyB := md5.Sum([]byte(models.Key)) //[]byte(key)
-		toencrypt, _ := json.Marshal(&metras)
+		toencrypt, _ := json.Marshal(metras)
 
 		coded, err := privacy.EncryptB2B(toencrypt, keyB[:])
 		if err != nil {
@@ -154,7 +154,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	}
 
 	rwr.WriteHeader(http.StatusOK)
-	json.NewEncoder(rwr).Encode(&metras)
+	json.NewEncoder(rwr).Encode(metras)
 }
 
 func CryptoHandleDecoder(next http.Handler) http.Handler {
