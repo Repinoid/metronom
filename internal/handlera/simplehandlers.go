@@ -3,7 +3,6 @@ package handlera
 import (
 	"fmt"
 	"gorono/internal/basis"
-	"gorono/internal/memos"
 	"gorono/internal/models"
 	"net/http"
 	"strconv"
@@ -11,20 +10,22 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Вызывается при неверном URL метода POST
 func BadPost(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
 	rwr.WriteHeader(http.StatusNotFound)
 	fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
 }
 
-func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
+// Выводит на экран все метрики
+func GetAllMetricsHandler(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
 	if req.URL.Path != "/" { // if GET with wrong arguments structure
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	metras := []memos.Metrics{}
+	metras := []models.Metrics{}
 	err := basis.RetryMetricWrapper(models.Inter.GetAllMetrics)(req.Context(), nil, &metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
@@ -44,6 +45,7 @@ func GetAllMetrix(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// Получить значение метрики методом GET
 func GetMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(req)
@@ -70,6 +72,7 @@ func GetMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// Внести метрику методом GET
 func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 
 	rwr.Header().Set("Content-Type", "text/html")
@@ -124,6 +127,7 @@ func PutMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// Пинг базы данных
 func DBPinger(rwr http.ResponseWriter, req *http.Request) {
 
 	err := models.Inter.Ping(req.Context(), models.DBEndPoint)

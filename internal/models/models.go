@@ -43,6 +43,7 @@ func IsMetricsOK(metr Metrics) bool {
 
 var (
 	Sugar         zap.SugaredLogger
+	Logger        *zap.Logger
 	StoreInterval        = 300
 	FileStorePath        = "./goshran.txt"
 	ReStore              = true

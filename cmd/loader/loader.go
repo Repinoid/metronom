@@ -1,3 +1,4 @@
+// пакет для тестирования
 package main
 
 import (

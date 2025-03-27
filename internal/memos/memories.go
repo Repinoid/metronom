@@ -1,3 +1,4 @@
+// пакет работы с Memory Storage
 package memos
 
 import (
@@ -15,25 +16,26 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// структура для хранения метрик - "база данных в памяти"
 type MemoryStorageStruct struct {
 	Gaugemetr map[string]models.Gauge
 	Countmetr map[string]models.Counter
 	Mutter    *sync.RWMutex
 }
-type Metrics = models.Metrics
 
-var mtx sync.RWMutex
-
+// создание MemoryStorage
 func InitMemoryStorage() *MemoryStorageStruct {
+	var mtx sync.RWMutex
 	memStor := MemoryStorageStruct{
-		Gaugemetr: make(map[string]gauge),
-		Countmetr: make(map[string]counter),
+		Gaugemetr: make(map[string]models.Gauge),
+		Countmetr: make(map[string]models.Counter),
 		Mutter:    &mtx,
 	}
 	return &memStor
 }
 
-func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metrics, gag *[]Metrics) error {
+// записать метрику в базу в памяти
+func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *models.Metrics, gag *[]models.Metrics) error {
 	if !models.IsMetricsOK(*metr) {
 		return fmt.Errorf("bad metric %+v", metr)
 	}
@@ -50,10 +52,11 @@ func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *Metric
 	return nil
 }
 
-func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *Metrics, gag *[]Metrics) error {
+// получить метрику из MemStorage
+func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *models.Metrics, gag *[]models.Metrics) error {
 	memorial.Mutter.RLock() // <---- MUTEX
 	defer memorial.Mutter.RUnlock()
-	//	metrix := Metrics{ID: metr.ID, MType: metr.MType} // new pure Metrics to return, nil Delta&Value ptrs
+	//	metrix := models.Metrics{ID: metr.ID, MType: metr.MType} // new pure models.Metrics to return, nil Delta&Value ptrs
 	switch metr.MType {
 	case "gauge":
 		if val, ok := memorial.Gaugemetr[metr.ID]; ok {
@@ -75,121 +78,51 @@ func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *Metric
 	return nil
 }
 
-// --- from []Metrics to memory Storage
-func (memorial *MemoryStorageStruct) PutAllMetrics(ctx context.Context, gag *Metrics, metras *[]Metrics) error {
+// from []models.Metrics to memory Storage
+func (memorial *MemoryStorageStruct) PutAllMetrics(ctx context.Context, gag *models.Metrics, metras *[]models.Metrics) error {
 	memorial.Mutter.Lock()
 	defer memorial.Mutter.Unlock()
 
 	for _, metr := range *metras {
 		switch metr.MType {
 		case "gauge":
-			memorial.Gaugemetr[metr.ID] = gauge(*metr.Value)
+			memorial.Gaugemetr[metr.ID] = models.Gauge(*metr.Value)
 		case "counter":
 			if _, ok := memorial.Countmetr[metr.ID]; ok {
-				memorial.Countmetr[metr.ID] += counter(*metr.Delta)
+				memorial.Countmetr[metr.ID] += models.Counter(*metr.Delta)
 				continue
 			}
-			memorial.Countmetr[metr.ID] = counter(*metr.Delta)
+			memorial.Countmetr[metr.ID] = models.Counter(*metr.Delta)
 		default:
-			log.Printf("wrong metric type %s\n", metr.MType)
+			return fmt.Errorf("wrong type %s", metr.MType)
 		}
 	}
 	return nil
 }
 
-// ----- from Memory Storage to []Metrics
-func (memorial *MemoryStorageStruct) GetAllMetrics(ctx context.Context, gag *Metrics, meS *[]Metrics) error {
+// from Memory Storage to []models.Metrics
+func (memorial *MemoryStorageStruct) GetAllMetrics(ctx context.Context, gag *models.Metrics, meS *[]models.Metrics) error {
 
 	memorial.Mutter.RLock()
 	defer memorial.Mutter.RUnlock()
 
-	var metras []Metrics
+	var metras []models.Metrics
 
 	for nam, val := range memorial.Countmetr {
 		out := int64(val)
-		metr := Metrics{ID: nam, MType: "counter", Delta: &out}
+		metr := models.Metrics{ID: nam, MType: "counter", Delta: &out}
 		metras = append(metras, metr)
 	}
 	for nam, val := range memorial.Gaugemetr {
 		out := float64(val)
-		metr := Metrics{ID: nam, MType: "gauge", Value: &out}
+		metr := models.Metrics{ID: nam, MType: "models.Gauge", Value: &out}
 		metras = append(metras, metr)
 	}
 	*meS = metras
 	return nil
 }
 
-// -------------------------------  FILERs ------------------------------------------
-type MStorJSON struct {
-	Gaugemetr map[string]models.Gauge
-	Countmetr map[string]models.Counter
-}
-
-func (memorial *MemoryStorageStruct) UnmarshalMS(data []byte) error {
-	memor := MStorJSON{
-		Gaugemetr: make(map[string]gauge),
-		Countmetr: make(map[string]counter),
-	}
-	buf := bytes.NewBuffer(data)
-	memorial.Mutter.Lock()
-	err := json.NewDecoder(buf).Decode(&memor)
-	memorial.Gaugemetr = memor.Gaugemetr
-	memorial.Countmetr = memor.Countmetr
-	memorial.Mutter.Unlock()
-	return err
-}
-func (memorial *MemoryStorageStruct) MarshalMS() ([]byte, error) {
-	buf := new(bytes.Buffer)
-	memorial.Mutter.RLock()
-	err := json.NewEncoder(buf).Encode(MStorJSON{
-		Gaugemetr: memorial.Gaugemetr,
-		Countmetr: memorial.Countmetr,
-	})
-	memorial.Mutter.RUnlock()
-	return append(buf.Bytes(), '\n'), err
-}
-
-func (memorial *MemoryStorageStruct) LoadMS(fnam string) error {
-	phil, err := os.OpenFile(fnam, os.O_RDONLY, 0666)
-	if err != nil {
-		return fmt.Errorf("file %s Open error %v", fnam, err)
-	}
-	reader := bufio.NewReader(phil)
-	data, err := reader.ReadBytes('\n')
-	if err != nil {
-		return fmt.Errorf("file %s Read error %v", fnam, err)
-	}
-	err = memorial.UnmarshalMS(data)
-	if err != nil {
-		return fmt.Errorf(" Memstorage UnMarshal error %v", err)
-	}
-	return nil
-}
-func (memorial *MemoryStorageStruct) SaveMS(fnam string) error {
-	phil, err := os.OpenFile(fnam, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		return fmt.Errorf("file %s Open error %v", fnam, err)
-	}
-	march, err := memorial.MarshalMS()
-	if err != nil {
-		return fmt.Errorf(" Memstorage Marshal error %v", err)
-	}
-	_, err = phil.Write(march)
-	if err != nil {
-		return fmt.Errorf("file %s Write error %v", fnam, err)
-	}
-	return nil
-}
-
-func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error {
-	for {
-		time.Sleep(time.Duration(storeInterval) * time.Second)
-		err := memorial.SaveMS(fnam)
-		if err != nil {
-			return fmt.Errorf("save err %v", err)
-		}
-	}
-}
+// проверка базы данных, когда активен Memory Storage. Открывает базу, пингует и закрывает
 func (memorial *MemoryStorageStruct) Ping(ctx context.Context, dbEndPoint string) error {
 	db, err := pgx.Connect(ctx, dbEndPoint)
 	if err != nil {
@@ -204,6 +137,91 @@ func (memorial *MemoryStorageStruct) Ping(ctx context.Context, dbEndPoint string
 	}
 	return nil
 }
+
+// получить текущее имя интерфейса Inter
 func (memorial *MemoryStorageStruct) GetName() string {
 	return "Memorial"
+}
+
+// структура для анмаршаллинга -  MemoryStorageStruct без мьютекса
+type MStorJSON struct {
+	Gaugemetr map[string]models.Gauge
+	Countmetr map[string]models.Counter
+}
+
+// decode Memstorage
+func (memorial *MemoryStorageStruct) UnmarshalMS(data []byte) error {
+	memor := MStorJSON{
+		Gaugemetr: make(map[string]models.Gauge),
+		Countmetr: make(map[string]models.Counter),
+	}
+	buf := bytes.NewBuffer(data)
+	memorial.Mutter.Lock()
+	err := json.NewDecoder(buf).Decode(&memor)
+	memorial.Gaugemetr = memor.Gaugemetr
+	memorial.Countmetr = memor.Countmetr
+	memorial.Mutter.Unlock()
+	return err
+}
+
+// Encode Memstorage
+func (memorial *MemoryStorageStruct) MarshalMS() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	memorial.Mutter.RLock()
+	err := json.NewEncoder(buf).Encode(MStorJSON{
+		Gaugemetr: memorial.Gaugemetr,
+		Countmetr: memorial.Countmetr,
+	})
+	memorial.Mutter.RUnlock()
+	return append(buf.Bytes(), '\n'), err
+}
+
+// загрузить метрики в Memstorage из файла
+func (memorial *MemoryStorageStruct) LoadMS(fnam string) error {
+	phil, err := os.OpenFile(fnam, os.O_RDONLY, 0666)
+	if err != nil {
+		return fmt.Errorf("file %s Open error %v", fnam, err)
+	}
+	defer phil.Close()
+
+	reader := bufio.NewReader(phil)
+	data, err := reader.ReadBytes('\n')
+	if err != nil {
+		return fmt.Errorf("file %s Read error %v", fnam, err)
+	}
+	err = memorial.UnmarshalMS(data)
+	if err != nil {
+		return fmt.Errorf(" Memstorage UnMarshal error %v", err)
+	}
+	return nil
+}
+
+// сохранить метрики в Memstorage в файл
+func (memorial *MemoryStorageStruct) SaveMS(fnam string) error {
+	phil, err := os.OpenFile(fnam, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		return fmt.Errorf("file %s Open error %v", fnam, err)
+	}
+	defer phil.Close()
+
+	march, err := memorial.MarshalMS()
+	if err != nil {
+		return fmt.Errorf(" Memstorage Marshal error %v", err)
+	}
+	_, err = phil.Write(march)
+	if err != nil {
+		return fmt.Errorf("file %s Write error %v", fnam, err)
+	}
+	return nil
+}
+
+// для горутины - сохранение метрик через storeInterval секунд
+func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error {
+	for {
+		time.Sleep(time.Duration(storeInterval) * time.Second)
+		err := memorial.SaveMS(fnam)
+		if err != nil {
+			return fmt.Errorf("save err %v", err)
+		}
+	}
 }

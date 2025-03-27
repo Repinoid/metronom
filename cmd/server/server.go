@@ -1,24 +1,11 @@
-/*
-metricstest -test.v -test.run="^TestIteration10[AB]*$" ^
--binary-path=cmd/server/server.exe -source-path=cmd/server/ ^
--agent-binary-path=cmd/agent/agent.exe ^
--server-port=8080 -file-storage-path=goshran.txt ^
--database-dsn=postgres://postgres:passwordas@localhost:5432/postgres
-
-
-curl localhost:8080/update/ -H "Content-Type":"application/json" -d "{\"type\":\"counter\",\"id\":\"PollCount\",\"value\":77}"
-curl localhost:8080/value/ -H "Content-Type":"application/json" -d "{\"type\":\"counter\",\"id\":\"PollCount\"}"
-*/
-
+// сервер для сбора рантайм-метрик, который будет собирать репорты от агентов по протоколу HTTP.
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 
 	"gorono/internal/handlera"
-	"gorono/internal/memos"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
 
@@ -27,14 +14,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// type Metrics = memos.Metrics
-type MemStorage = memos.MemoryStorageStruct
+//  listens on the TCP network address for ListenAndServe
+var Host = "localhost:8080"
 
-var host = "localhost:8080"
-
-var ctx context.Context
-
-// var models.Inter models.Inter // 	= memStor OR dbStorage
+//var ctx context.Context
 
 func main() {
 
@@ -51,12 +34,13 @@ func main() {
 		go models.Inter.Saver(models.FileStorePath, models.StoreInterval)
 	}
 
-	if err := run(); err != nil {
+	if err := Run(); err != nil {
 		panic(err)
 	}
 }
 
-func run() error {
+// run. ЗАпуск сервера и хендлеры
+func Run() error {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", handlera.PutMetric).Methods("POST")
@@ -64,25 +48,19 @@ func run() error {
 	router.HandleFunc("/updates/", handlera.Buncheras).Methods("POST")
 	router.HandleFunc("/value/{metricType}/{metricName}", handlera.GetMetric).Methods("GET")
 	router.HandleFunc("/value/", handlera.GetJSONMetric).Methods("POST")
-	router.HandleFunc("/", handlera.GetAllMetrix).Methods("GET")
+	router.HandleFunc("/", handlera.GetAllMetricsHandler).Methods("GET")
 	router.HandleFunc("/", handlera.BadPost).Methods("POST") // if POST with wrong arguments structure
 	router.HandleFunc("/ping", handlera.DBPinger).Methods("GET")
 
-	// router.HandleFunc("/debug/pprof/", pprof.Index)
-	// router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	// router.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	// router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	// router.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	//	router.HandleFunc("/debug/pprof/heap", pprof.Heap)
-
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
+	//router.Use(middlas.NoSugarLogging)
 	router.Use(middlas.WithLogging)
-	router.Use(handlera.CryptoHandleDecoder)
+	router.Use(middlas.CryptoHandleDecoder)
 
 	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
-	return http.ListenAndServe(host, router)
+	return http.ListenAndServe(Host, router)
 }
 
 /*
@@ -96,5 +74,7 @@ metricstest -test.v -test.run="^TestIteration11[AB]*$" ^
 metricstest -test.v -test.run="^TestIteration1[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/
 
 go run . -k=pass -d=postgres://postgres:passwordas@localhost:5432/forgo
+
+go test ./... -v -coverpkg=./...
 
 */

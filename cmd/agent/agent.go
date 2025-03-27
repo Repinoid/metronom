@@ -1,3 +1,4 @@
+// агент (HTTP-клиент) для сбора рантайм-метрик и их последующей отправки на сервер по протоколу HTTP.
 package main
 
 import (
@@ -66,7 +67,7 @@ func metrixIN(metroBarn chan<- []models.Metrics) {
 			atomic.AddInt64(&cunt, 1) //			cunt++
 
 			for ind, metr := range memStorage {
-				if metr.ID == "PollCount" && metr.MType == "counter" {	// search for PollCount metric
+				if metr.ID == "PollCount" && metr.MType == "counter" { // search for PollCount metric
 					cu := atomic.LoadInt64(&cunt)
 					memStorage[ind].Delta = &cu // memStorage[ind].Delta = cunt
 					break
@@ -131,8 +132,8 @@ func bolda(metroBarn <-chan []models.Metrics, fenix <-chan struct{}) {
 			SetDoNotParseResponse(false).
 			Post("/updates/") // slash on the tile
 		if resp.StatusCode() == http.StatusOK { // при успешной отправке метрик обнуляем cчётчик
-			atomic.StoreInt64(&cunt, 0)		//	cunt = 0
-			
+			atomic.StoreInt64(&cunt, 0) //	cunt = 0
+
 		}
 
 		log.Printf("AGENT responce from server %+v\n", resp.StatusCode())

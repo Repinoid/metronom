@@ -20,11 +20,13 @@ func InitServer() error {
 		panic("cannot initialize zap")
 	}
 	defer logger.Sync()
+
+	models.Logger = logger
 	models.Sugar = *logger.Sugar()
 
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
-		host = hoster
+		Host = hoster
 		//		return nil
 	}
 	enva, exists := os.LookupEnv("STORE_INTERVAL")
@@ -64,7 +66,7 @@ func InitServer() error {
 
 	flag.StringVar(&keyFlag, "k", models.Key, "KEY")
 	flag.StringVar(&dbFlag, "d", models.DBEndPoint, "Data Base endpoint")
-	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
+	flag.StringVar(&hostFlag, "a", Host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", models.FileStorePath, "Only -a={host:port} flag is allowed here")
 	storeIntervalFlag := flag.Int("i", models.StoreInterval, "storeInterval")
 	restoreFlag := flag.Bool("r", models.ReStore, "restore")
@@ -75,7 +77,7 @@ func InitServer() error {
 		return fmt.Errorf("no host parsed from arg string")
 	}
 	if _, exists := os.LookupEnv("ADDRESS"); !exists {
-		host = hostFlag
+		Host = hostFlag
 	}
 	if _, exists := os.LookupEnv("STORE_INTERVAL"); !exists {
 		models.StoreInterval = *storeIntervalFlag
@@ -100,7 +102,7 @@ func InitServer() error {
 		return nil
 	}
 
-	ctx = context.Background()
+	ctx := context.Background()
 	dbStorage, err := basis.InitDBStorage(ctx, models.DBEndPoint)
 
 	if err != nil {

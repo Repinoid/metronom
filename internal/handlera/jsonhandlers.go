@@ -1,7 +1,7 @@
+// пакет хендлеров - обработчиков запросов на сервер
 package handlera
 
 import (
-	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -15,9 +15,7 @@ import (
 	"strings"
 )
 
-type Metrics = memos.Metrics
-
-// /value/ handler
+// GetJSONMetric - возвращает метрику по запросу методом POST.
 func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
@@ -30,7 +28,7 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
-	metr := Metrics{}
+	metr := models.Metrics{}
 	err = json.Unmarshal([]byte(telo), &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest) // с некорректным  значением возвращать http.StatusBadRequest.
@@ -45,8 +43,6 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//models.Sugar.Debugf("after models.Inter.GetMetric %+v err %+v\n", metr, err)
-
 	if strings.Contains(err.Error(), "unknown metric") {
 		rwr.WriteHeader(http.StatusNotFound) // неизвестной метрики сервер должен возвращать http.StatusNotFound.
 		fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
@@ -56,6 +52,7 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 }
 
+// GetJSONMetric - размещает метрику по запросу методом POST
 func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
@@ -67,7 +64,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
-	metr := Metrics{}
+	metr := models.Metrics{}
 	err = json.Unmarshal([]byte(telo), &metr)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest) // с некорректным  значением возвращать http.StatusBadRequest.
@@ -103,26 +100,18 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// GetJSONMetric - размещает слайс метрик. В т.ч. от Агента.
 func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-		models.Sugar.Debugf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! io.ReadAll(req.Body) err %+v\n", err)
+		models.Sugar.Debugf("!!!!! io.ReadAll(req.Body) err %+v\n", err)
 		return
 	}
 	defer req.Body.Close()
 
-	//var p fastjson.Parser
-	//metras := []models.Metrics{}
-
 	metras, err := memos.MetrixUnMarhal(telo) // own json decoder
-	// if err != nil {
-	// 	log.Fatalf("cannot parse json: %s", err)
-	// }
-
-	// buf := bytes.NewBuffer(telo)
-	// err = json.NewDecoder(buf).Decode(&metras)
 
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
@@ -140,7 +129,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	}
 
 	if models.Key != "" {
-		keyB := md5.Sum([]byte(models.Key)) //[]byte(key)
+		keyB := md5.Sum([]byte(models.Key)) 
 		toencrypt, _ := json.Marshal(metras)
 
 		coded, err := privacy.EncryptB2B(toencrypt, keyB[:])
@@ -155,48 +144,4 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 
 	rwr.WriteHeader(http.StatusOK)
 	json.NewEncoder(rwr).Encode(metras)
-}
-
-func CryptoHandleDecoder(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
-
-		if haInHeader := req.Header.Get("HashSHA256"); haInHeader != "" { // если есть ключ переопределить req
-			telo, err := io.ReadAll(req.Body)
-			if err != nil {
-				rwr.WriteHeader(http.StatusBadRequest)
-				fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-				return
-			}
-			defer req.Body.Close()
-
-			keyB := md5.Sum([]byte(models.Key)) //[]byte(key)
-			ha := privacy.MakeHash(nil, telo, keyB[:])
-			haHex := hex.EncodeToString(ha)
-
-			//			log.Printf("%s from KEY %s\n%s from Header\n", haHex, models.Key, haInHeader)
-
-			if haHex != haInHeader { // несовпадение хешей вычисленного по ключу и переданного в header
-				rwr.WriteHeader(http.StatusBadRequest)
-				fmt.Fprintf(rwr, `{"wrong hash":"%s"}`, haInHeader)
-				return
-			}
-			telo, err = privacy.DecryptB2B(telo, keyB[:])
-			if err != nil {
-				rwr.WriteHeader(http.StatusBadRequest)
-				fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-				return
-			}
-			newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewBuffer(telo))
-			if err != nil {
-				io.WriteString(rwr, err.Error())
-				return
-			}
-			for name := range req.Header { // cкопировать поля header
-				hea := req.Header.Get(name)
-				newReq.Header.Add(name, hea)
-			}
-			req = newReq
-		}
-		next.ServeHTTP(rwr, req)
-	})
 }

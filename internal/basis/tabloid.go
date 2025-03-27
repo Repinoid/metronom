@@ -5,20 +5,28 @@ import (
 	"fmt"
 	"log"
 
-	//	"github.com/jackc/pgx/v5"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"gorono/internal/models"
 )
 
+// Метрика.
+//
+//	 type Metrics struct {
+//		ID    string   `json:"id"`              // имя метрики
+//		MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+//		Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+//		Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+//	}
 type Metrics = models.Metrics
 
+// Структура для базы данных.
 type DBstruct struct {
 	DB *pgxpool.Pool
 	//	DB *pgx.Conn
 }
 
+// connect to DataBase by pgxpool.New.
 func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 	dbStorage := &DBstruct{}
 	//baza, err := pgx.Connect(ctx, dbEndPoint)
@@ -34,10 +42,8 @@ func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 	return dbStorage, nil
 }
 
+// create Gauge &  Counter TABLEs IF NOT EXISTS.
 func TableCreation(ctx context.Context, db *pgxpool.Pool) error {
-	//func TableCreation(ctx context.Context, db *pgx.Conn) error {
-	//	crea := "DROP TABLE Counter;"
-	//	crea += "DROP TABLE Gauge;"
 	crea := "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
 	tag, err := db.Exec(ctx, crea)
 	if err != nil {
@@ -47,6 +53,22 @@ func TableCreation(ctx context.Context, db *pgxpool.Pool) error {
 	tag, err = db.Exec(ctx, crea)
 	if err != nil {
 		return fmt.Errorf("error create Counter table. Tag is \"%s\" error is %w", tag.String(), err)
+	}
+	return nil
+}
+
+// delete Gauge &  Counter tables.
+func (dataBase *DBstruct) TablesDrop(ctx context.Context) error {
+	db := dataBase.DB
+	crea := "DROP TABLE Counter;"
+	tag, err := db.Exec(ctx, crea)
+	if err != nil {
+		return fmt.Errorf("error DROP Counter table. Tag is \"%s\" error is %w", tag.String(), err)
+	}
+	crea = "DROP TABLE Gauge;"
+	tag, err = db.Exec(ctx, crea)
+	if err != nil {
+		return fmt.Errorf("error DROP Gauge table. Tag is \"%s\" error is %w", tag.String(), err)
 	}
 	return nil
 }
@@ -108,11 +130,12 @@ func (dataBase *DBstruct) GetMetric(ctx context.Context, metr *Metrics, gag *[]M
 // ----------- transaction. PUT ALL metrics to the tables ----------------------
 func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, gag *Metrics, metras *[]Metrics) error {
 	db := dataBase.DB
-	//func TableBuncher(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("error db.Begin  %[1]w", err)
 	}
+	defer tx.Rollback(ctx)
+
 	var order string
 	for _, metr := range *metras {
 		if !models.IsMetricsOK(metr) {
@@ -133,7 +156,6 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, gag *Metrics, metra
 		}
 		_, err := tx.Exec(ctx, order)
 		if err != nil {
-			defer tx.Rollback(ctx)
 			log.Printf("error put %+v. error is %v", metr, err)
 			return err
 		}
@@ -144,7 +166,6 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, gag *Metrics, metra
 // ------- get ALL metrics from the tables
 func (dataBase *DBstruct) GetAllMetrics(ctx context.Context, gag *Metrics, meS *[]Metrics) error {
 	db := dataBase.DB
-	//func TableGetAllTables(ctx context.Context, db *pgx.Conn, metras *[]Metrics) error {
 	zapros := `select 'counter' AS metrictype, metricname AS name, null AS value, value AS delta from counter
 		UNION
 	select 'gauge' AS metrictype, metricname as name, value as value, null as delta from gauge`
@@ -155,10 +176,10 @@ func (dataBase *DBstruct) GetAllMetrics(ctx context.Context, gag *Metrics, meS *
 
 	rows, err := db.Query(ctx, zapros)
 	if err != nil {
-		return fmt.Errorf("error Query  %[1]w", err)
-		//		return fmt.Errorf("error Query %[2]s:%[3]d  %[1]w", err, db.Config().Host, db.Config().Port)
+		return fmt.Errorf("error Query  %w", err)
 	}
-	//	metras := []Metrics{}
+	defer rows.Close()
+
 	metras := *meS
 	for rows.Next() {
 		err = rows.Scan(&metr.MType, &metr.ID, &metr.Value, &metr.Delta)
@@ -172,16 +193,23 @@ func (dataBase *DBstruct) GetAllMetrics(ctx context.Context, gag *Metrics, meS *
 	}
 	return nil
 }
+
+// load Metrix from file. epmty function for DB
 func (dataBase *DBstruct) LoadMS(fnam string) error {
 	return nil
 }
+
+// save Metrix to file. epmty function for DB
 func (dataBase *DBstruct) SaveMS(fnam string) error {
 	return nil
 }
+
+// для горутины сохранения метрик в файл. epmty function for DB
 func (dataBase *DBstruct) Saver(fnam string, i int) error {
 	return nil
 }
 
+// DataBase PING
 func (dataBase *DBstruct) Ping(ctx context.Context, gag string) error {
 	err := dataBase.DB.Ping(ctx) // база то открыта ...
 	if err != nil {
@@ -191,6 +219,7 @@ func (dataBase *DBstruct) Ping(ctx context.Context, gag string) error {
 	return nil
 }
 
+// get name. to recognise who is in interface
 func (dataBase *DBstruct) GetName() string {
 	return "DBaser"
 }
