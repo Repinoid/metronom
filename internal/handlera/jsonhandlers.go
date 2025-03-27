@@ -72,7 +72,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !models.IsMetricsOK(metr) {
+	if !memos.IsMetricOK(metr) {
 		rwr.WriteHeader(http.StatusBadRequest)
 		models.Sugar.Debugf("bad Metric %+v\n", metr)
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
@@ -129,7 +129,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	}
 
 	if models.Key != "" {
-		keyB := md5.Sum([]byte(models.Key)) 
+		keyB := md5.Sum([]byte(models.Key))
 		toencrypt, _ := json.Marshal(metras)
 
 		coded, err := privacy.EncryptB2B(toencrypt, keyB[:])

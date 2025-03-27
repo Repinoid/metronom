@@ -31,15 +31,7 @@ type Interferon interface {
 	GetName() string
 }
 
-func IsMetricsOK(metr Metrics) bool {
-	if (metr.MType != "gauge" && metr.MType != "counter") ||
-		(metr.MType == "counter" && metr.Delta == nil) ||
-		(metr.MType == "gauge" && metr.Value == nil) ||
-		(metr.Delta != nil && metr.Value != nil) {
-		return false
-	}
-	return true
-}
+
 
 var (
 	Sugar         zap.SugaredLogger

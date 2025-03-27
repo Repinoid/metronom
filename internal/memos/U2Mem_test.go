@@ -54,7 +54,7 @@ func (suite *TstMemo) Test02MemPutGetMetric() {
 
 }
 func (suite *TstMemo) Test03Mem() {
-	err := suite.memorial.PutAllMetrics(suite.ctx, nil, &([]Metrics{m1, m2, m2}))
+	err := suite.memorial.PutAllMetrics(suite.ctx, nil, &([]models.Metrics{m1, m2, m2}))
 	suite.Require().NoError(err)
 	metr := models.Metrics{MType: m1.MType, ID: m1.ID}
 	err = suite.memorial.GetMetric(suite.ctx, &metr, nil)

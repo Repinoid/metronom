@@ -3,6 +3,7 @@ package handlera
 import (
 	"fmt"
 	"gorono/internal/basis"
+	"gorono/internal/memos"
 	"gorono/internal/models"
 	"net/http"
 	"strconv"
@@ -53,7 +54,7 @@ func GetMetric(rwr http.ResponseWriter, req *http.Request) {
 	metricName := vars["metricName"]
 	metr := models.Metrics{ID: metricName, MType: metricType}
 	err := basis.RetryMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
-	if err != nil || !models.IsMetricsOK(metr) { // if no such metric, type+name
+	if err != nil || !memos.IsMetricOK(metr) { // if no such metric, type+name
 		rwr.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(rwr, `{"wrong metric name":"%s"}`, metricName)
 		return

@@ -36,7 +36,7 @@ func InitMemoryStorage() *MemoryStorageStruct {
 
 // записать метрику в базу в памяти
 func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *models.Metrics, gag *[]models.Metrics) error {
-	if !models.IsMetricsOK(*metr) {
+	if !IsMetricOK(*metr) {
 		return fmt.Errorf("bad metric %+v", metr)
 	}
 	memorial.Mutter.Lock()
@@ -224,4 +224,15 @@ func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error
 			return fmt.Errorf("save err %v", err)
 		}
 	}
+}
+
+// check if Metric has correct fields
+func IsMetricOK(metr models.Metrics) bool {
+	if (metr.MType != "gauge" && metr.MType != "counter") ||
+		(metr.MType == "counter" && metr.Delta == nil) ||
+		(metr.MType == "gauge" && metr.Value == nil) ||
+		(metr.Delta != nil && metr.Value != nil) {
+		return false
+	}
+	return true
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"gorono/internal/memos"
 	"gorono/internal/models"
 )
 
@@ -75,7 +76,7 @@ func (dataBase *DBstruct) TablesDrop(ctx context.Context) error {
 
 // -------------- put ONE metric to the table
 func (dataBase *DBstruct) PutMetric(ctx context.Context, metr *Metrics, gag *[]Metrics) error {
-	if !models.IsMetricsOK(*metr) {
+	if !memos.IsMetricOK(*metr) {
 		return fmt.Errorf("bad metric %+v", metr)
 	}
 	db := dataBase.DB
@@ -138,7 +139,7 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, gag *Metrics, metra
 
 	var order string
 	for _, metr := range *metras {
-		if !models.IsMetricsOK(metr) {
+		if !memos.IsMetricOK(metr) {
 			log.Printf("wrong metric %+v", metr)
 			continue
 		}
