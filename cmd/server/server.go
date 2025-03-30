@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//  listens on the TCP network address for ListenAndServe
+// listens on the TCP network address for ListenAndServe
 var Host = "localhost:8080"
 
 //var ctx context.Context
@@ -64,17 +64,10 @@ func Run() error {
 }
 
 /*
-metricstest -test.v -test.run="^TestIteration11[AB]*$" ^
--binary-path=cmd/server/server.exe -source-path=cmd/server/ ^
--agent-binary-path=cmd/agent/agent.exe ^
--server-port=8080 -file-storage-path=goshran.txt ^
--database-dsn=postgres://postgres:passwordas@localhost:5432/postgres
-
-
-metricstest -test.v -test.run="^TestIteration1[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/
-
-go run . -k=pass -d=postgres://postgres:passwordas@localhost:5432/forgo
-
 go test ./... -v -coverpkg=./...
+
+http://localhost:8080/pkg/?m=all
+
+godoc -http=:8080 -play
 
 */

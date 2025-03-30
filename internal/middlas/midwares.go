@@ -1,3 +1,4 @@
+// пакет мидлварей
 package middlas
 
 import (
@@ -16,27 +17,32 @@ import (
 	"go.uber.org/zap"
 )
 
+// структура для ZAP logger. 
 type responseData struct {
 	status int
 	size   int
 }
+
+// структура для ZAP logger
 type loggingResponseWriter struct {
 	http.ResponseWriter // встраиваем оригинальный http.ResponseWriter
 	responseData        *responseData
 }
 
+// метод middleware ZAP logger, захватываем размер
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size // захватываем размер
 	return size, err
 }
 
+// метод middleware ZAP logger, захватываем statusCode в заголовке
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.status = statusCode // захватываем код статуса
 }
 
-// func WithLogging(origFunc func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+// ZAP log with SUGAR
 func WithLogging(next http.Handler) http.Handler {
 	loggedFunc := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -62,6 +68,7 @@ func WithLogging(next http.Handler) http.Handler {
 	return http.HandlerFunc(loggedFunc)
 }
 
+// ZAP log no sugar mode
 func NoSugarLogging(next http.Handler) http.Handler {
 	loggedFunc := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -96,7 +103,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-// middleware
+// middleware упаковки
 func GzipHandleEncoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
 		isTypeOK := strings.Contains(req.Header.Get("Content-Type"), "application/json") ||
@@ -114,7 +121,7 @@ func GzipHandleEncoder(next http.Handler) http.Handler {
 	})
 }
 
-// middleware
+// middleware распаковки
 func GzipHandleDecoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
 
@@ -140,6 +147,7 @@ func GzipHandleDecoder(next http.Handler) http.Handler {
 	})
 }
 
+// middleware раскодировки криптографии
 func CryptoHandleDecoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
 

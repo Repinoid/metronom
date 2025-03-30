@@ -40,5 +40,5 @@ var (
 	FileStorePath        = "./goshran.txt"
 	ReStore              = true
 	DBEndPoint           = ""
-	Key           string = ""
+	Key           string = ""	// flag.StringVar(&keyFlag, "k", models.Key, "KEY")
 )

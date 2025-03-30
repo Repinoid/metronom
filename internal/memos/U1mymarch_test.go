@@ -1,11 +1,9 @@
 package memos
 
 import (
-	"bytes"
 	"encoding/json"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
-	"testing"
 )
 
 var m1 = models.Metrics{MType: "gauge", ID: "gaager", Value: middlas.Ptr(444.44)}
@@ -39,41 +37,5 @@ func (suite *TstMemo) Test01MetrixUnMarshal() {
 			_, err := MetrixUnMarhal(tt.marchalled)
 			suite.Require().Equal(tt.wantErr, err != nil)
 		})
-	}
-}
-
-func BenchmarkOwnUnMarsh(b *testing.B) {
-	b.StopTimer()
-	metricsBunch := []models.Metrics{m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2}
-	//metricsBunch := []models.Metrics{m1, m2}
-	ma, _ := json.Marshal(metricsBunch)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		MetrixUnMarhal(ma)
-	}
-}
-
-func BenchmarkNewDecoder(b *testing.B) {
-	b.StopTimer()
-	metricsBunch := []models.Metrics{m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2}
-	metricsOut := []models.Metrics{}
-	ma, _ := json.Marshal(metricsBunch)
-	buf := bytes.NewBuffer(ma)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		//json.Unmarshal(ma, &metricsOut)
-		json.NewDecoder(buf).Decode(&metricsOut)
-	}
-	// fmt.Println(metricsOut[0], len(metricsOut))
-}
-
-func BenchmarkJSONUnMarshal(b *testing.B) {
-	b.StopTimer()
-	metricsBunch := []models.Metrics{m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2}
-	metricsOut := []models.Metrics{}
-	ma, _ := json.Marshal(metricsBunch)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		json.Unmarshal(ma, &metricsOut)
 	}
 }

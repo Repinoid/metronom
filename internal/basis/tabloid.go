@@ -1,3 +1,4 @@
+// пакет работы с Базой Данных
 package basis
 
 import (
