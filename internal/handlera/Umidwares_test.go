@@ -16,8 +16,6 @@ import (
 
 // test GzipHandleEncoder middleware on different metrics functions
 func (suite *TstHandlers) Test_gzipPutGet() {
-	// //initForTests()
-	// InitServer()
 	type want struct {
 		code     int
 		response string
@@ -41,18 +39,6 @@ func (suite *TstHandlers) Test_gzipPutGet() {
 		metras          []models.Metrics
 		function        func(http.ResponseWriter, *http.Request) //func4test
 	}{
-		// {
-		// 	name:            "GET unknown",
-		// 	AcceptEncoding:  "gzip",
-		// 	ContentEncoding: "",
-		// 	ContentType:     "application/json",
-		// 	function:        GetJSONMetric,
-		// 	metr:            controlMetric,
-		// 	want: want{
-		// 		code:     http.StatusOK,
-		// 		response: `{"status":"StatusNotFound"}`, // Metric not exist yet
-		// 	},
-		// },
 		{
 			name:            "BUNCH",
 			AcceptEncoding:  "gzip",
@@ -94,7 +80,6 @@ func (suite *TstHandlers) Test_gzipPutGet() {
 			name:            "NO ENCODINg",
 			AcceptEncoding:  "",
 			ContentEncoding: "gzip",
-			//ContentType:     "application/json",
 			function: thecap,
 			metr:     controlMetric1,
 			want: want{
@@ -180,4 +165,3 @@ func thecap(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Write(telo)
 }
 
-// go test ./... -v -coverpkg=./...

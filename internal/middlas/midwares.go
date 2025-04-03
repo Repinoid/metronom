@@ -18,13 +18,13 @@ import (
 	"gorono/internal/privacy"
 )
 
-// структура для ZAP logger.
+// responseData структура для ZAP logger.
 type responseData struct {
 	status int
 	size   int
 }
 
-// структура для ZAP logger
+// loggingResponseWriter структура для ZAP logger
 type loggingResponseWriter struct {
 	http.ResponseWriter // встраиваем оригинальный http.ResponseWriter
 	responseData        *responseData
@@ -43,7 +43,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode // захватываем код статуса
 }
 
-// ZAP log with SUGAR
+//  WithLogging ZAP log with SUGAR
 func WithLogging(next http.Handler) http.Handler {
 	loggedFunc := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -69,7 +69,7 @@ func WithLogging(next http.Handler) http.Handler {
 	return http.HandlerFunc(loggedFunc)
 }
 
-// ZAP log no sugar mode
+// NoSugarLogging ZAP log no sugar mode
 func NoSugarLogging(next http.Handler) http.Handler {
 	loggedFunc := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -104,7 +104,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-// middleware упаковки
+// GzipHandleEncoder middleware упаковки
 func GzipHandleEncoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
 		isTypeOK := strings.Contains(req.Header.Get("Content-Type"), "application/json") ||
@@ -122,7 +122,7 @@ func GzipHandleEncoder(next http.Handler) http.Handler {
 	})
 }
 
-// middleware распаковки
+// GzipHandleDecoder middleware распаковки
 func GzipHandleDecoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
 
@@ -148,7 +148,7 @@ func GzipHandleDecoder(next http.Handler) http.Handler {
 	})
 }
 
-// middleware раскодировки криптографии
+// CryptoHandleDecoder middleware раскодировки криптографии
 func CryptoHandleDecoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
 
@@ -192,7 +192,3 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 		next.ServeHTTP(rwr, req)
 	})
 }
-
-/*
-curl localhost:8080/update/ -H "Content-Type":"application/json" -d "{\"type\":\"gauge\",\"id\":\"nam\",\"value\":77}"
-*/

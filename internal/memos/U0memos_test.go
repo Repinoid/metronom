@@ -41,16 +41,6 @@ func (suite *TstMemo) TearDownSuite() { //
 	log.Printf("Spent %v\n", time.Since(suite.startTime))
 }
 
-// func (suite *TstHandlers) BeforeTest(suiteName, testName string) { // выполняется перед каждым тестом
-// 	var err error
-// 	Interbase, err = securitate.ConnectToDB(suite.ctx)
-// 	suite.Require().NoErrorf(err, "err %v", err)
-// }
-// func (suite *TstHandlers) AfterTest(suiteName, testName string) { // // выполняется после каждого теста
-//
-//		err := Interbase.CloseBase(suite.ctx)
-//		suite.Require().NoErrorf(err, "err %v", err)
-//	}
 
 func TestHandlersSuite(t *testing.T) {
 	testMemos := new(TstMemo)
@@ -60,5 +50,3 @@ func TestHandlersSuite(t *testing.T) {
 	suite.Run(t, testMemos)
 
 }
-
-// go test ./... -v -coverpkg=./...

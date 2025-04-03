@@ -18,19 +18,6 @@ func BenchmarkOwnUnMarsh(b *testing.B) {
 	}
 }
 
-// func BenchmarkNewDecoder(b *testing.B) {
-// 	b.StopTimer()
-// 	metricsBunch := []models.Metrics{m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2, m1, m2}
-// 	metricsOut := []models.Metrics{}
-// 	ma, _ := json.Marshal(metricsBunch)
-// 	buf := bytes.NewBuffer(ma)
-// 	b.StartTimer()
-// 	for i := 0; i < b.N; i++ {
-// 		//json.Unmarshal(ma, &metricsOut)
-// 		json.NewDecoder(buf).Decode(&metricsOut)
-// 	}
-// 	// fmt.Println(metricsOut[0], len(metricsOut))
-// }
 
 func BenchmarkJSONUnMarshal(b *testing.B) {
 	b.StopTimer()
@@ -43,5 +30,3 @@ func BenchmarkJSONUnMarshal(b *testing.B) {
 	}
 }
 
-// go tool pprof -http=":9090" cpuo
-// go test -bench .  -cpuprofile=cpuo

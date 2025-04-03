@@ -12,9 +12,6 @@ import (
 	"gorono/internal/models"
 )
 
-//type gauge = models.Gauge
-//type counter = models.Counter
-
 // GetMoreMetrix получает три дополнительных метрики из gopsutil
 func GetMoreMetrix() *[]models.Metrics {
 	v, _ := mem.VirtualMemory() //             VirtualMemory()

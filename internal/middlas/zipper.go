@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Pack2gzip - он и есть pack to gzip
 func Pack2gzip(data2pack []byte) ([]byte, error) {
 	var buf bytes.Buffer
 	zw := gzip.NewWriter(&buf)
@@ -22,6 +23,7 @@ func Pack2gzip(data2pack []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// UnpackFromGzip - распаковщик
 func UnpackFromGzip(data2unpack io.Reader) (io.Reader, error) {
 	gzipReader, err := gzip.NewReader(data2unpack)
 	if err != nil {
@@ -33,6 +35,7 @@ func UnpackFromGzip(data2unpack io.Reader) (io.Reader, error) {
 	return gzipReader, nil
 }
 
+// Ptr возвращает ссылку на int64 или float64 в зависимости от агрумента или параметра типа в случае int64 или float64 без дробной части
 func Ptr[PP int64 | float64](w PP) *PP {
 	i := w
 	return &i

@@ -38,17 +38,6 @@ func (suite *TstMid) TearDownSuite() { //
 	log.Printf("Spent %v\n", time.Since(suite.startTime))
 }
 
-// func (suite *TstHandlers) BeforeTest(suiteName, testName string) { // выполняется перед каждым тестом
-// 	var err error
-// 	Interbase, err = securitate.ConnectToDB(suite.ctx)
-// 	suite.Require().NoErrorf(err, "err %v", err)
-// }
-// func (suite *TstHandlers) AfterTest(suiteName, testName string) { // // выполняется после каждого теста
-//
-//		err := Interbase.CloseBase(suite.ctx)
-//		suite.Require().NoErrorf(err, "err %v", err)
-//	}
-
 func TestHandlersSuite(t *testing.T) {
 	testM := new(TstMid)
 	testM.ctx = context.Background()

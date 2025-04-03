@@ -127,17 +127,3 @@ func (suite *TstHandlers) Test_SimpleCounterTwice() {
 	suite.Assert().Equal("88", bb) // 44 + 44
 
 }
-
-// func (suite *TstHandlers) Test_SimplePutGetGauge() {
-
-// 	metr := models.Metrics{MType: "gauge", ID: "Alloc", Value: middlas.Ptr(777.77)}
-// 	urla := fmt.Sprintf("/update/%s/%s/%g", metr.MType, metr.ID, *metr.Value)
-// 	request := httptest.NewRequest(http.MethodGet, urla, nil)
-// 	w := httptest.NewRecorder()
-// 	PutMetric(w, request)
-// 	res := w.Body
-// 	telo, err := io.ReadAll(res)
-// 	suite.Require().Equal(err != nil, false)
-// 	suite.Require().Equal("777.77", string(telo))
-
-// }

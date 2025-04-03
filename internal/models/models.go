@@ -31,14 +31,13 @@ type Interferon interface {
 	GetName() string
 }
 
-
-
+// переменные для логгера и получающие значения из аргументов комендной строки
 var (
 	Sugar         zap.SugaredLogger
 	Logger        *zap.Logger
-	StoreInterval        = 300
-	FileStorePath        = "./goshran.txt"
-	ReStore              = true
-	DBEndPoint           = ""
-	Key           string = ""	// flag.StringVar(&keyFlag, "k", models.Key, "KEY")
+	StoreInterval        = 300             // интервал сохранения метрик в файл, секунд
+	FileStorePath        = "./goshran.txt" // файл для сохранения метрик
+	ReStore              = true            // надо ли сохранять метрики в файл
+	DBEndPoint           = ""              // endpoint базы данных
+	Key           string = ""              // парол
 )
