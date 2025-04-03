@@ -14,7 +14,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// go test ./... -coverpkg=./...
 func ExamplePutMetric() {
 
 	memStor := memos.InitMemoryStorage()

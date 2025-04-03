@@ -6,7 +6,6 @@
 *.dylib
 *.txt
 t*.bat
-.gitignore
 
 # Test binary, built with `go test -c`
 *.test
