@@ -17,6 +17,7 @@ import (
 )
 
 // GetJSONMetric - возвращает метрику по запросу методом POST.
+// router.HandleFunc("/value/", handlera.GetJSONMetric).Methods("POST")
 func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
@@ -53,7 +54,8 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 }
 
-// GetJSONMetric - размещает метрику по запросу методом POST
+// PutJSONMetric - размещает метрику по запросу методом POST
+// router.HandleFunc("/update/", handlera.PutJSONMetric).Methods("POST")
 func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "application/json")
 
@@ -101,7 +103,8 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// GetJSONMetric - размещает слайс метрик. В т.ч. от Агента.
+// Buncheras - размещает слайс метрик. В т.ч. от Агента.
+// router.HandleFunc("/updates/", handlera.Buncheras).Methods("POST")
 func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {

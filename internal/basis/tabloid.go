@@ -28,7 +28,7 @@ type DBstruct struct {
 	//	DB *pgx.Conn
 }
 
-// connect to DataBase by pgxpool.New.
+// InitDBStorage - connect to DataBase by pgxpool.New.
 func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 	dbStorage := &DBstruct{}
 	//baza, err := pgx.Connect(ctx, dbEndPoint)
@@ -44,7 +44,7 @@ func InitDBStorage(ctx context.Context, dbEndPoint string) (*DBstruct, error) {
 	return dbStorage, nil
 }
 
-// create Gauge &  Counter TABLEs IF NOT EXISTS.
+// TableCreation - create Gauge &  Counter TABLEs IF NOT EXISTS.
 func TableCreation(ctx context.Context, db *pgxpool.Pool) error {
 	crea := "CREATE TABLE IF NOT EXISTS Gauge(metricname VARCHAR(50) PRIMARY KEY, value FLOAT8);"
 	tag, err := db.Exec(ctx, crea)

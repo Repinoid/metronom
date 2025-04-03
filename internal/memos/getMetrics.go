@@ -15,7 +15,7 @@ import (
 //type gauge = models.Gauge
 //type counter = models.Counter
 
-// три доп. метрики из gopsutil
+// GetMoreMetrix получает три дополнительных метрики из gopsutil
 func GetMoreMetrix() *[]models.Metrics {
 	v, _ := mem.VirtualMemory() //             VirtualMemory()
 	cc, _ := cpu.Counts(true)
@@ -33,7 +33,7 @@ func GetMoreMetrix() *[]models.Metrics {
 	return &metrArray
 }
 
-// рантайм метрики из runtime.MemStats
+// GetMetrixFromOS получает антайм метрики из runtime.MemStats
 func GetMetrixFromOS() *[]models.Metrics {
 	var mS runtime.MemStats
 	runtime.ReadMemStats(&mS)
@@ -85,7 +85,7 @@ func GetMetrixFromOS() *[]models.Metrics {
 	return &metrArray
 }
 
-// самопальный анмаршал метрик, полученных от Агента
+// MetrixUnMarhal - самопальный анмаршал слайса метрик, полученных от Агента
 func MetrixUnMarhal(bunchOnMarsh []byte) (*[]models.Metrics, error) {
 	metricArray := new([]models.Metrics) // "new" - create on heap
 
