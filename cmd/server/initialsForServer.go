@@ -4,17 +4,19 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"gorono/internal/basis"
-	"gorono/internal/memos"
-	"gorono/internal/models"
 	"log"
 	"os"
 	"strconv"
 
 	"go.uber.org/zap"
+
+	"gorono/internal/basis"
+	"gorono/internal/memos"
+	"gorono/internal/models"
 )
 
-func InitServer() error {
+// initServer () - инициализация параметров сервера и endpoint базы данных из аргументов командной строки
+func initServer() error {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic("cannot initialize zap")
@@ -67,9 +69,9 @@ func InitServer() error {
 	flag.StringVar(&keyFlag, "k", models.Key, "KEY")
 	flag.StringVar(&dbFlag, "d", models.DBEndPoint, "Data Base endpoint")
 	flag.StringVar(&hostFlag, "a", Host, "Only -a={host:port} flag is allowed here")
-	flag.StringVar(&fileStoreFlag, "f", models.FileStorePath, "Only -a={host:port} flag is allowed here")
+	flag.StringVar(&fileStoreFlag, "f", models.FileStorePath, "-f= file to save memory storage")
 	storeIntervalFlag := flag.Int("i", models.StoreInterval, "storeInterval")
-	restoreFlag := flag.Bool("r", models.ReStore, "restore")
+	restoreFlag := flag.Bool("r", models.ReStore, "is restore mode on")
 
 	flag.Parse()
 

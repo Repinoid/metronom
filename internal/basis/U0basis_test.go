@@ -2,20 +2,21 @@ package basis
 
 import (
 	"context"
-	"gorono/internal/models"
 	"log"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
+	
+	"gorono/internal/models"
 )
 
 type TstBase struct {
 	suite.Suite
-	t   time.Time
-	ctx context.Context
-	dataBase    *DBstruct
+	t        time.Time
+	ctx      context.Context
+	dataBase *DBstruct
 }
 
 func (suite *TstBase) SetupSuite() { // выполняется перед тестами

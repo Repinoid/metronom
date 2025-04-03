@@ -2,13 +2,14 @@ package handlera
 
 import (
 	"fmt"
-	"gorono/internal/basis"
-	"gorono/internal/memos"
-	"gorono/internal/models"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+
+	"gorono/internal/basis"
+	"gorono/internal/memos"
+	"gorono/internal/models"
 )
 
 // Вызывается при неверном URL метода POST

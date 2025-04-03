@@ -2,15 +2,16 @@ package handlera
 
 import (
 	"context"
-	"gorono/internal/basis"
-	"gorono/internal/memos"
-	"gorono/internal/models"
 	"log"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
+
+	"gorono/internal/basis"
+	"gorono/internal/memos"
+	"gorono/internal/models"
 )
 
 type TstHandlers struct {

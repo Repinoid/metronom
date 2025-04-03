@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"gorono/internal/middlas"
-	"gorono/internal/models"
 	"io"
 	"log"
+
 	"net/http"
 	"net/http/httptest"
+
+	"gorono/internal/middlas"
+	"gorono/internal/models"
 )
 
 // test GzipHandleEncoder middleware on different metrics functions
@@ -167,7 +169,7 @@ func (suite *TstHandlers) Test_gzipPutGet() {
 }
 
 // хандлер для теста - что пришло, то и ушло
-func thecap(rwr http.ResponseWriter, req *http.Request) { 
+func thecap(rwr http.ResponseWriter, req *http.Request) {
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)

@@ -4,24 +4,21 @@ package main
 import (
 	"log"
 	"net/http"
+	_ "net/http/pprof"
+
+	"github.com/gorilla/mux"
 
 	"gorono/internal/handlera"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
-
-	_ "net/http/pprof"
-
-	"github.com/gorilla/mux"
 )
 
 // listens on the TCP network address for ListenAndServe
 var Host = "localhost:8080"
 
-//var ctx context.Context
-
 func main() {
 
-	if err := InitServer(); err != nil {
+	if err := initServer(); err != nil {
 		log.Println(err, " no success for foa4Server() ")
 		return
 	}
@@ -54,7 +51,7 @@ func Run() error {
 
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
-	//router.Use(middlas.NoSugarLogging)
+	//router.Use(middlas.NoSugarLogging)	// или NoSugarLogging - или WithLogging ZAP логирование
 	router.Use(middlas.WithLogging)
 	router.Use(middlas.CryptoHandleDecoder)
 
@@ -63,11 +60,3 @@ func Run() error {
 	return http.ListenAndServe(Host, router)
 }
 
-/*
-go test ./... -v -coverpkg=./...
-
-http://localhost:8080/pkg/?m=all
-
-godoc -http=:8080 -play
-
-*/

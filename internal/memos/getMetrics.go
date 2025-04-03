@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"gorono/internal/models"
-
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
+
+	"gorono/internal/models"
 )
 
 //type gauge = models.Gauge

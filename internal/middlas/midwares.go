@@ -7,17 +7,18 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"gorono/internal/models"
-	"gorono/internal/privacy"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"go.uber.org/zap"
+
+	"gorono/internal/models"
+	"gorono/internal/privacy"
 )
 
-// структура для ZAP logger. 
+// структура для ZAP logger.
 type responseData struct {
 	status int
 	size   int

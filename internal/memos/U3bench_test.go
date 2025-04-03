@@ -2,8 +2,9 @@ package memos
 
 import (
 	"encoding/json"
-	"gorono/internal/models"
 	"testing"
+
+	"gorono/internal/models"
 )
 
 func BenchmarkOwnUnMarsh(b *testing.B) {

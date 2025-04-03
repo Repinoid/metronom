@@ -7,13 +7,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gorono/internal/models"
 	"log"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+
+	"gorono/internal/models"
 )
 
 // структура для хранения метрик - "база данных в памяти"

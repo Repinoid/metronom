@@ -7,6 +7,7 @@ import (
 	"strconv"
 )
 
+// initAgent() - инициализация параметров агента из аргументов командной строки
 func initAgent() error {
 	enva, exists := os.LookupEnv("ADDRESS")
 	if exists {

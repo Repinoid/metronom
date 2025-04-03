@@ -10,12 +10,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/go-resty/resty/v2"
+
 	"gorono/internal/memos"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
 	"gorono/internal/privacy"
-
-	"github.com/go-resty/resty/v2"
 )
 
 var host = "localhost:8080"

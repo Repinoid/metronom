@@ -3,13 +3,14 @@ package middlas
 import (
 	"bytes"
 	"fmt"
-	"gorono/internal/models"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"go.uber.org/zap"
+
+	"gorono/internal/models"
 )
 
 func (suite *TstMid) Test01MiddlasSugared() {

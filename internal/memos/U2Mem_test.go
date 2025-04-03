@@ -1,9 +1,10 @@
 package memos
 
 import (
+	"os"
+
 	"gorono/internal/middlas"
 	"gorono/internal/models"
-	"os"
 )
 
 func (suite *TstMemo) Test02MemPutGetMetric() {
@@ -85,11 +86,11 @@ func (suite *TstMemo) Test04Mem() {
 
 	err = suite.memorial.SaveMS("kut.metr")
 	suite.Require().NoError(err)
-	
+
 	err = tstMemorial.LoadMS("kut.metr")
 	suite.Require().NoError(err)
 	suite.Require().EqualValues(suite.memorial, tstMemorial)
-	
+
 	err = os.Remove("kut.metr")
 	suite.Require().NoError(err)
 

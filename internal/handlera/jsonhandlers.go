@@ -6,13 +6,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
+
 	"gorono/internal/basis"
 	"gorono/internal/memos"
 	"gorono/internal/models"
 	"gorono/internal/privacy"
-	"io"
-	"net/http"
-	"strings"
 )
 
 // GetJSONMetric - возвращает метрику по запросу методом POST.
