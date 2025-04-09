@@ -18,6 +18,8 @@ import (
 	"gorono/internal/privacy"
 )
 
+//var host = ":8080"
+
 var host = "localhost:8080"
 var reportInterval = 10
 var pollInterval = 2

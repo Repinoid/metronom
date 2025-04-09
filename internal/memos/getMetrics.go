@@ -64,6 +64,7 @@ func GetMetrixFromOS() *[]models.Metrics {
 		"TotalAlloc":    models.Gauge(mS.TotalAlloc),
 		"RandomValue":   models.Gauge(rand.Float64()), // self-defined
 	}
+
 	counterMap := map[string]models.Counter{
 		"PollCount": models.Counter(0), // self-defined
 	}

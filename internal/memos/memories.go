@@ -116,7 +116,7 @@ func (memorial *MemoryStorageStruct) GetAllMetrics(ctx context.Context, gag *mod
 	}
 	for nam, val := range memorial.Gaugemetr {
 		out := float64(val)
-		metr := models.Metrics{ID: nam, MType: "models.Gauge", Value: &out}
+		metr := models.Metrics{ID: nam, MType: "gauge", Value: &out}
 		metras = append(metras, metr)
 	}
 	*meS = metras

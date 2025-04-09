@@ -16,7 +16,7 @@ import (
 )
 
 // initServer () - инициализация параметров сервера и endpoint базы данных из аргументов командной строки
-func initServer() error {
+func InitServer() error {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic("cannot initialize zap")
@@ -105,6 +105,7 @@ func initServer() error {
 	}
 
 	ctx := context.Background()
+	//	dbStorage, err := basis.InitDBStorage(ctx, "host=go_db user=postgres password=postgres dbname=postgres sslmode=disable")
 	dbStorage, err := basis.InitDBStorage(ctx, models.DBEndPoint)
 
 	if err != nil {
