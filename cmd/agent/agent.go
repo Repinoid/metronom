@@ -28,6 +28,8 @@ var key = ""
 var rateLimit = 4
 var cunt int64
 
+// Глобальные переменные для флага компилляции.
+// Форма запуска go run -ldflags "-X main.buildVersion=v1.0.1 -X 'main.buildDate=$(date +'%Y/%m/%d')' -X main.buildCommit=comitta" main.go
 var (
 	buildVersion = "N/A"
 	buildDate    = "N/A"

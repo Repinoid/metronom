@@ -6,6 +6,7 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+// runner функция, которая отвечает за анализ исходного кода. Ищет os.Exit
 func runner(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
 		// функцией ast.Inspect проходим по всем узлам AST
