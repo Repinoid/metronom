@@ -23,12 +23,22 @@ import (
 
 var Host = ":8080"
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
 
 	if err := InitServer(); err != nil {
 		log.Println(err, " no success for foa4Server() ")
 		return
 	}
+
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 
 	if models.ReStore {
 		_ = models.Inter.LoadMS(models.FileStorePath)
