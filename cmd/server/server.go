@@ -1,190 +1,95 @@
-/*
-metricstest -test.v -test.run="^TestIteration8[AB]*$" -binary-path=cmd/server/server.exe -source-path=cmd/server/  -agent-binary-path=cmd/agent/agent.exe -server-port=localhost:8080
-*/
-
+// сервер для сбора рантайм-метрик, который будет собирать репорты от агентов по протоколу HTTP.
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
-	"sync"
+	_ "net/http/pprof"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
-	"go.uber.org/zap"
+	"github.com/jackc/pgx/v5"
+
+	"gorono/internal/handlera"
+	"gorono/internal/middlas"
+	"gorono/internal/models"
 )
 
-type gauge float64
-type counter int64
-type MemStorage struct {
-	gau    map[string]gauge
-	count  map[string]counter
-	mutter sync.RWMutex
-}
+// listens on the TCP network address for ListenAndServe
+//var Host = "localhost:8000"
 
-type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
+var Host = ":8080"
 
-var memStor MemStorage
-var host = "localhost:8080"
-var sugar zap.SugaredLogger
-
-func saver(memStor *MemStorage, fnam string) error {
-
-	for {
-		time.Sleep(time.Duration(storeInterval) * time.Second)
-		err := memStor.SaveMS(fnam)
-		if err != nil {
-			return fmt.Errorf("save err %v", err)
-		}
-	}
-}
+// Глобальные переменные для флага компилляции.
+// Форма запуска go run -ldflags "-X main.buildVersion=v1.0.1 -X 'main.buildDate=$(date +'%Y/%m/%d')' -X main.buildCommit=comitta" main.go
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
 
 func main() {
-	if err := foa4Server(); err != nil {
+
+	if err := InitServer(); err != nil {
 		log.Println(err, " no success for foa4Server() ")
 		return
 	}
 
-	memStor = MemStorage{
-		gau:   make(map[string]gauge),
-		count: make(map[string]counter),
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
+	if models.ReStore {
+		_ = models.Inter.LoadMS(models.FileStorePath)
 	}
 
-	if reStore {
-		_ = memStor.LoadMS(fileStorePath)
+	if models.StoreInterval > 0 {
+		go models.Inter.Saver(models.FileStorePath, models.StoreInterval)
 	}
 
-	if storeInterval > 0 {
-		go saver(&memStor, fileStorePath)
-	}
-
-	if err := run(); err != nil {
+	if err := Run(); err != nil {
 		panic(err)
 	}
-
 }
 
-func run() error {
+// run. ЗАпуск сервера и хендлеры
+func Run() error {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", WithLogging(treatMetric)).Methods("POST")
-	router.HandleFunc("/update/", WithLogging(treatJSONMetric)).Methods("POST")
-	router.HandleFunc("/value/{metricType}/{metricName}", WithLogging(getMetric)).Methods("GET")
-	router.HandleFunc("/value/", WithLogging(getJSONMetric)).Methods("POST")
-	router.HandleFunc("/", WithLogging(getAllMetrix)).Methods("GET")
-	router.HandleFunc("/", WithLogging(badPost)).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", handlera.PutMetric).Methods("POST")
+	router.HandleFunc("/update/", handlera.PutJSONMetric).Methods("POST")
+	router.HandleFunc("/updates/", handlera.Buncheras).Methods("POST")
+	router.HandleFunc("/value/{metricType}/{metricName}", handlera.GetMetric).Methods("GET")
+	router.HandleFunc("/value/", handlera.GetJSONMetric).Methods("POST")
+	router.HandleFunc("/", handlera.GetAllMetricsHandler).Methods("GET")
+	router.HandleFunc("/", handlera.BadPost).Methods("POST") // if POST with wrong arguments structure
+	router.HandleFunc("/ping", handlera.DBPinger).Methods("GET")
 
-	router.Use(gzipHandleEncoder)
-	router.Use(gzipHandleDecoder)
+	router.HandleFunc("/s", seconda).Methods("GET")
 
-	logger, err := zap.NewDevelopment()
+	router.Use(middlas.GzipHandleEncoder)
+	router.Use(middlas.GzipHandleDecoder)
+	//router.Use(middlas.NoSugarLogging)	// или NoSugarLogging - или WithLogging ZAP логирование
+	router.Use(middlas.WithLogging)
+	router.Use(middlas.CryptoHandleDecoder)
+
+	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
+
+	return http.ListenAndServe(Host, router)
+}
+
+func seconda(rwr http.ResponseWriter, req *http.Request) {
+	//	var DBEndPoint = "postgres://postgres:postgres@go_db:5432/postgres"
+
+	//	baza, err := pgx.Connect(context.Background(), DBEndPoint)
+	baza, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_DSN"))
 	if err != nil {
-		panic("cannot initialize zap")
-	}
-	defer logger.Sync()
-	sugar = *logger.Sugar()
-
-	return http.ListenAndServe(host, router)
-}
-
-func badPost(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/html")
-	rwr.WriteHeader(http.StatusNotFound)
-	fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
-}
-
-func getAllMetrix(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/html")
-	if req.URL.Path != "/" { // if GET with wrong arguments structure
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
+		fmt.Fprintf(rwr, "NO pgx.Connect %v\n", err)
 		return
 	}
-	rwr.WriteHeader(http.StatusOK)
-	memStor.mutter.RLock() // <---- MUTEX
-	defer memStor.mutter.RUnlock()
-	for nam, val := range memStor.gau {
-		flo := strconv.FormatFloat(float64(val), 'f', -1, 64) // -1 - to remove zeroes tail
-		fmt.Fprintf(rwr, "Gauge Metric name   %20s\t\tvalue\t%s\n", nam, flo)
-	}
-	for nam, val := range memStor.count {
-		fmt.Fprintf(rwr, "Counter Metric name %20s\t\tvalue\t%d\n", nam, val)
-	}
-}
-func getMetric(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/html")
-	vars := mux.Vars(req)
-	metricType := vars["metricType"]
-	metricName := vars["metricName"]
-	switch metricType {
-	case "counter":
-		var cunt counter
-		if memStor.getCounterValue(metricName, &cunt) != nil {
-			rwr.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(rwr, nil)
-			return
-		}
-		fmt.Fprint(rwr, cunt)
-	case "gauge":
-		var gaaga gauge
-		if memStor.getGaugeValue(metricName, &gaaga) != nil {
-			rwr.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(rwr, nil)
-			return
-		}
-		fmt.Fprint(rwr, gaaga)
-	default:
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(rwr, nil)
-		return
-	}
-	rwr.WriteHeader(http.StatusOK)
-}
+	fmt.Fprintf(rwr, "PING OK %v %v\n", baza, time.Now())
 
-func treatMetric(rwr http.ResponseWriter, req *http.Request) {
-	rwr.Header().Set("Content-Type", "text/html")
-	vars := mux.Vars(req)
-	metricType := vars["metricType"]
-	metricName := vars["metricName"]
-	metricValue := vars["metricValue"]
-	if metricValue == "" {
-		rwr.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(rwr, `{"status":"StatusNotFound"}`)
-		return
-	}
-	switch metricType {
-	case "counter":
-		value, err := strconv.ParseInt(metricValue, 10, 64)
-		if err != nil {
-			rwr.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-			return
-		}
-		memStor.addCounter(metricName, counter(value))
-	case "gauge":
-		value, err := strconv.ParseFloat(metricValue, 64)
-		if err != nil {
-			rwr.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-			return
-		}
-		memStor.addGauge(metricName, gauge(value))
-	default:
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-		return
-	}
-	fmt.Fprintf(rwr, `{"status":"StatusOK"}`)
-	rwr.WriteHeader(http.StatusOK)
-
-	if storeInterval == 0 {
-		_ = memStor.SaveMS(fileStorePath)
-	}
 }
