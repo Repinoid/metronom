@@ -13,7 +13,7 @@ import (
 )
 
 // BadPost - Вызывается при неверном URL метода POST
-// router.HandleFunc("/", handlera.BadPost).Methods("POST") 
+// router.HandleFunc("/", handlera.BadPost).Methods("POST")
 func BadPost(rwr http.ResponseWriter, req *http.Request) {
 	rwr.Header().Set("Content-Type", "text/html")
 	rwr.WriteHeader(http.StatusNotFound)
@@ -38,13 +38,14 @@ func GetAllMetricsHandler(rwr http.ResponseWriter, req *http.Request) {
 	}
 
 	rwr.WriteHeader(http.StatusOK)
+
 	for _, metr := range metras {
 		switch metr.MType {
 		case "gauge":
 			flo := strconv.FormatFloat(float64(*metr.Value), 'f', -1, 64) // -1 - to remove zeroes tail
 			fmt.Fprintf(rwr, "Gauge Metric name   %20s\t\tvalue\t%s\n", metr.ID, flo)
 		case "counter":
-			fmt.Fprintf(rwr, "Gauge Metric name   %20s\t\tvalue\t%d\n", metr.ID, *metr.Delta)
+			fmt.Fprintf(rwr, "Counter Metric name   %20s\t\tvalue\t%d\n", metr.ID, *metr.Delta)
 		}
 	}
 }

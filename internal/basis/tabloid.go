@@ -174,7 +174,6 @@ func (dataBase *DBstruct) GetAllMetrics(ctx context.Context, gag *Metrics, meS *
 
 	var inta int64
 	var flo float64
-	metr := Metrics{ID: "", MType: "", Value: &flo, Delta: &inta}
 
 	rows, err := db.Query(ctx, zapros)
 	if err != nil {
@@ -182,8 +181,10 @@ func (dataBase *DBstruct) GetAllMetrics(ctx context.Context, gag *Metrics, meS *
 	}
 	defer rows.Close()
 
-	metras := *meS
+	metras := []Metrics{}
+	//	metras := *meS
 	for rows.Next() {
+		metr := Metrics{ID: "", MType: "", Value: &flo, Delta: &inta}
 		err = rows.Scan(&metr.MType, &metr.ID, &metr.Value, &metr.Delta)
 		if err != nil {
 			return fmt.Errorf("error table Scan  %[1]w", err)
@@ -193,6 +194,8 @@ func (dataBase *DBstruct) GetAllMetrics(ctx context.Context, gag *Metrics, meS *
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("err := rows.Err()  %w", err)
 	}
+	*meS = metras
+
 	return nil
 }
 
