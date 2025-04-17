@@ -19,14 +19,15 @@ import (
 	"gorono/internal/privacy"
 )
 
-//var host = ":8080"
-
 var host = "localhost:8080"
-var reportInterval = 10
-var pollInterval = 2
-var key = ""
-var rateLimit = 4
-var cunt int64
+
+var (
+	reportInterval = 10
+	pollInterval = 2
+	key          = ""
+	rateLimit    = 4
+	cunt         int64
+)
 
 // Глобальные переменные для флага компилляции.
 // Форма запуска go run -ldflags "-X main.buildVersion=v1.0.1 -X 'main.buildDate=$(date +'%Y/%m/%d')' -X main.buildCommit=comitta" main.go
