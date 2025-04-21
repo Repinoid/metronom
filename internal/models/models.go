@@ -39,5 +39,6 @@ var (
 	FileStorePath        = "./goshran.txt" // файл для сохранения метрик
 	ReStore              = true            // надо ли сохранять метрики в файл
 	DBEndPoint           = ""              // endpoint базы данных
-	Key           string = ""              // парол
+	Key           string = ""              // file name with private key
+	PrivateKey    string = ""              // private key
 )

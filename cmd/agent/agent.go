@@ -2,8 +2,6 @@
 package main
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -23,10 +21,11 @@ var host = "localhost:8080"
 
 var (
 	reportInterval = 10
-	pollInterval = 2
-	key          = ""
-	rateLimit    = 4
-	cunt         int64
+	pollInterval   = 2
+	key            = ""
+	publicKey      = ""
+	rateLimit      = 4
+	cunt           int64
 )
 
 // Глобальные переменные для флага компилляции.
@@ -39,7 +38,7 @@ var (
 
 func main() {
 	if err := initAgent(); err != nil {
-		log.Fatal("INTERVALS error ", err)
+		log.Fatal(err)
 		return
 	}
 
@@ -104,17 +103,19 @@ func bolda(metroBarn <-chan []models.Metrics, fenix <-chan struct{}) {
 			<-fenix // в случае ошибки читаем из феникса, разблокируя канал и выходим
 			return
 		}
-		var haHex string
-		if key != "" {
-			keyB := md5.Sum([]byte(key))
+		//	var haHex string
+		if publicKey != "" {
+			//		keyB := md5.Sum([]byte(key))
 
-			coded, err := privacy.EncryptB2B(marshalledBunch, keyB[:])
+			coded, err := privacy.Encrypt(marshalledBunch, publicKey)
+
+			//		coded, err := privacy.EncryptB2B(marshalledBunch, keyB[:])
 			if err != nil {
 				<-fenix
 				return
 			}
-			ha := privacy.MakeHash(nil, coded, keyB[:])
-			haHex = hex.EncodeToString(ha)
+			//		ha := privacy.MakeHash(nil, coded, keyB[:])
+			//		haHex = hex.EncodeToString(ha)
 			marshalledBunch = coded
 		}
 		compressedBunch, err := middlas.Pack2gzip(marshalledBunch)
@@ -140,9 +141,9 @@ func bolda(metroBarn <-chan []models.Metrics, fenix <-chan struct{}) {
 			SetBody(compressedBunch).
 			SetHeader("Accept-Encoding", "gzip")
 
-		if key != "" {
-			req.Header.Add("HashSHA256", haHex)
-		}
+		// if key != "" {
+		// 	req.Header.Add("HashSHA256", haHex)
+		// }
 
 		resp, _ := req.
 			SetDoNotParseResponse(false).

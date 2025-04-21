@@ -39,7 +39,7 @@ func InitServer() error {
 			log.Printf("STORE_INTERVAL error value %s\t error %v", enva, err)
 		}
 	}
-	enva, exists = os.LookupEnv("KEY")
+	enva, exists = os.LookupEnv("CRYPTO_KEY")
 	if exists {
 		models.Key = enva
 	}
@@ -66,7 +66,7 @@ func InitServer() error {
 	var dbFlag string
 	var keyFlag string
 
-	flag.StringVar(&keyFlag, "k", models.Key, "KEY")
+	flag.StringVar(&keyFlag, "crypto-key", models.Key, "путь до файла с private ключом")
 	flag.StringVar(&dbFlag, "d", models.DBEndPoint, "Data Base endpoint")
 	flag.StringVar(&hostFlag, "a", Host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", models.FileStorePath, "-f= file to save memory storage")
@@ -93,7 +93,7 @@ func InitServer() error {
 	if _, exists := os.LookupEnv("DATABASE_DSN"); !exists {
 		models.DBEndPoint = dbFlag
 	}
-	if _, exists := os.LookupEnv("KEY"); !exists {
+	if _, exists := os.LookupEnv("CRYPTO_KEY"); !exists {
 		models.Key = keyFlag
 	}
 	memStor := memos.InitMemoryStorage()
@@ -114,5 +114,17 @@ func InitServer() error {
 		return nil
 	}
 	models.Inter = dbStorage // data base as Metric Storage
+
+	if models.Key != "" {
+		// pkb - private key in []byte
+		pkb, err := os.ReadFile(models.Key)
+		if err != nil {
+			return err
+		}
+		models.PrivateKey = string(pkb)
+	}
+
+
+
 	return nil
 }
