@@ -64,6 +64,7 @@ func WithLogging(next http.Handler) http.Handler {
 			"size", responseData.size, // получаем перехваченный размер ответа
 		)
 	}
+	
 	return http.HandlerFunc(loggedFunc)
 }
 
