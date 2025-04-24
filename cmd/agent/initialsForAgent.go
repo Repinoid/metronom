@@ -12,8 +12,8 @@ import (
 // flags структура с параметрами агента в JSON файле
 type flagAgent struct {
 	Address         string `json:"address"`         // аналог переменной окружения ADDRESS или флага -a
-	Report_interval string `json:"report_interval"` // аналог переменной окружения STORE_INTERVAL или флага -i
-	Poll_interval   string `json:"poll_interval"`   // аналог переменной окружения STORE_INTERVAL или флага -i
+	ReportInterval string `json:"report_interval"` // аналог переменной окружения STORE_INTERVAL или флага -i
+	PollInterval   string `json:"poll_interval"`   // аналог переменной окружения STORE_INTERVAL или флага -i
 	Crypto_key      string `json:"crypto_key"`      // аналог переменной окружения CRYPTO_KEY или флага -crypto-key
 }
 
@@ -43,12 +43,12 @@ func initAgent() error {
 		if err != nil {
 			return err
 		}
-		interval, err := memos.TakeInterval(prapor.Poll_interval)
+		interval, err := memos.TakeInterval(prapor.PollInterval)
 		if err != nil {
 			return err
 		}
 		pollInterval = interval
-		interval, err = memos.TakeInterval(prapor.Report_interval)
+		interval, err = memos.TakeInterval(prapor.ReportInterval)
 		if err != nil {
 			return err
 		}

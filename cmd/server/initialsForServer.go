@@ -20,10 +20,10 @@ import (
 type flagServer struct {
 	Address        string `json:"address"`        // аналог переменной окружения ADDRESS или флага -a
 	Restore        bool   `json:"restore"`        // аналог переменной окружения RESTORE или флага -r
-	Store_interval string `json:"store_interval"` // аналог переменной окружения STORE_INTERVAL или флага -i
-	Store_file     string `json:"store_file"`     // аналог переменной окружения STORE_FILE или -f
+	StoreInterval string `json:"store_interval"` // аналог переменной окружения STORE_INTERVAL или флага -i
+	StoreFile     string `json:"store_file"`     // аналог переменной окружения STORE_FILE или -f
 	Database_dsn   string `json:"database_dsn"`   // аналог переменной окружения DATABASE_DSN или флага -d
-	Crypto_key     string `json:"crypto_key"`     // аналог переменной окружения CRYPTO_KEY или флага -crypto-key
+	CryptoKey     string `json:"crypto_key"`     // аналог переменной окружения CRYPTO_KEY или флага -crypto-key
 }
 
 // initServer () - инициализация параметров сервера и endpoint базы данных из аргументов командной строки
@@ -69,15 +69,15 @@ func InitServer() error {
 		}
 		models.ReStore = prapor.Restore // bool, надо ли сохранять в файл
 		if prapor.Restore {
-			interval, err := memos.TakeInterval(prapor.Store_interval)
+			interval, err := memos.TakeInterval(prapor.StoreInterval)
 			if err != nil {
 				return err
 			}
 			models.StoreInterval = interval
 		}
 		Host = prapor.Address
-		models.Key = prapor.Crypto_key
-		models.FileStorePath = prapor.Store_file
+		models.Key = prapor.CryptoKey
+		models.FileStorePath = prapor.StoreFile
 		models.DBEndPoint = prapor.Database_dsn
 	}
 	// параметры из флагов командной строки, которые есть
