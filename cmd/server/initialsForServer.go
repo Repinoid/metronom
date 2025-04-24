@@ -22,7 +22,7 @@ type flagServer struct {
 	Restore        bool   `json:"restore"`        // аналог переменной окружения RESTORE или флага -r
 	StoreInterval string `json:"store_interval"` // аналог переменной окружения STORE_INTERVAL или флага -i
 	StoreFile     string `json:"store_file"`     // аналог переменной окружения STORE_FILE или -f
-	Database_dsn   string `json:"database_dsn"`   // аналог переменной окружения DATABASE_DSN или флага -d
+	DatabaseDsn   string `json:"database_dsn"`   // аналог переменной окружения DATABASE_DSN или флага -d
 	CryptoKey     string `json:"crypto_key"`     // аналог переменной окружения CRYPTO_KEY или флага -crypto-key
 }
 
@@ -78,7 +78,7 @@ func InitServer() error {
 		Host = prapor.Address
 		models.Key = prapor.CryptoKey
 		models.FileStorePath = prapor.StoreFile
-		models.DBEndPoint = prapor.Database_dsn
+		models.DBEndPoint = prapor.DatabaseDsn
 	}
 	// параметры из флагов командной строки, которые есть
 	if hostFlag != "" {

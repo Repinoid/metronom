@@ -14,7 +14,7 @@ type flagAgent struct {
 	Address         string `json:"address"`         // аналог переменной окружения ADDRESS или флага -a
 	ReportInterval string `json:"report_interval"` // аналог переменной окружения STORE_INTERVAL или флага -i
 	PollInterval   string `json:"poll_interval"`   // аналог переменной окружения STORE_INTERVAL или флага -i
-	Crypto_key      string `json:"crypto_key"`      // аналог переменной окружения CRYPTO_KEY или флага -crypto-key
+	CryptoKey      string `json:"crypto_key"`      // аналог переменной окружения CRYPTO_KEY или флага -crypto-key
 }
 
 // initAgent() - инициализация параметров агента из аргументов командной строки
@@ -55,7 +55,7 @@ func initAgent() error {
 		reportInterval = interval
 
 		host = prapor.Address
-		cryptoKey = prapor.Crypto_key
+		cryptoKey = prapor.CryptoKey
 	}
 	// параметры из флагов
 	if hostFlag != "" {
