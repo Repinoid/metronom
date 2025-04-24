@@ -26,6 +26,33 @@ func InitServer() error {
 	models.Logger = logger
 	models.Sugar = *logger.Sugar()
 
+	// возрастание приоритетов - из JSON файла, флаги, переменные окружения
+	// будем инициализировать параметры в этом порядке, более приоритетные переопределят предыдущие присваивания
+	var hostFlag string
+	var fileStoreFlag string
+	var dbFlag string
+	var keyFlag string
+	var configFlag string
+
+	flag.StringVar(&configFlag, "c", models.Key, "путь до файла с JSON конфигурации")
+	flag.StringVar(&configFlag, "config", models.Key, "путь до файла с JSON конфигурации") // -c = -config
+	flag.StringVar(&keyFlag, "crypto-key", models.Key, "путь до файла с private ключом")
+	flag.StringVar(&dbFlag, "d", models.DBEndPoint, "Data Base endpoint")
+	flag.StringVar(&hostFlag, "a", Host, "Only -a={host:port} flag is allowed here")
+	flag.StringVar(&fileStoreFlag, "f", models.FileStorePath, "-f= file to save memory storage")
+	storeIntervalFlag := flag.Int("i", models.StoreInterval, "storeInterval")
+	restoreFlag := flag.Bool("r", models.ReStore, "is restore mode on")
+
+	flag.Parse()
+
+	if configFlag != "" {
+		
+	}
+
+
+
+
+
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		Host = hoster
@@ -61,19 +88,6 @@ func InitServer() error {
 		//	return nil
 	}
 
-	var hostFlag string
-	var fileStoreFlag string
-	var dbFlag string
-	var keyFlag string
-
-	flag.StringVar(&keyFlag, "crypto-key", models.Key, "путь до файла с private ключом")
-	flag.StringVar(&dbFlag, "d", models.DBEndPoint, "Data Base endpoint")
-	flag.StringVar(&hostFlag, "a", Host, "Only -a={host:port} flag is allowed here")
-	flag.StringVar(&fileStoreFlag, "f", models.FileStorePath, "-f= file to save memory storage")
-	storeIntervalFlag := flag.Int("i", models.StoreInterval, "storeInterval")
-	restoreFlag := flag.Bool("r", models.ReStore, "is restore mode on")
-
-	flag.Parse()
 
 	if hostFlag == "" {
 		return fmt.Errorf("no host parsed from arg string")
