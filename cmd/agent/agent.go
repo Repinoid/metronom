@@ -22,7 +22,7 @@ var host = "localhost:8080"
 var (
 	reportInterval = 10
 	pollInterval   = 2
-	key            = ""
+	cryptoKey      = ""
 	publicKey      = ""
 	rateLimit      = 4
 	cunt           int64
