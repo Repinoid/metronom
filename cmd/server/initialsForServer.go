@@ -45,13 +45,9 @@ func InitServer() error {
 
 	flag.Parse()
 
-	if configFlag != "" {
-		
-	}
+	// if configFlag != "" {
 
-
-
-
+	// }
 
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
@@ -87,7 +83,6 @@ func InitServer() error {
 		}
 		//	return nil
 	}
-
 
 	if hostFlag == "" {
 		return fmt.Errorf("no host parsed from arg string")
@@ -137,8 +132,6 @@ func InitServer() error {
 		}
 		models.PrivateKey = string(pkb)
 	}
-
-
 
 	return nil
 }
