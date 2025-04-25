@@ -6,6 +6,7 @@
 *.dylib
 *.txt
 t*.bat
+*.pem
 
 # Test binary, built with `go test -c`
 *.test
