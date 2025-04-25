@@ -227,7 +227,7 @@ func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error
 	}
 }
 func (memorial *MemoryStorageStruct) Close() {
-	return
+	//return
 }
 
 // check if Metric has correct fields

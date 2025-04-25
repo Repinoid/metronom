@@ -105,7 +105,7 @@ func run() error {
 
 	// ждём завершения процедуры graceful shutdown
 	<-idleConnsClosed
-	// выполняем cancel контекста
+	// выполняем cancel контекста, metrixIN & bolda stop
 	cancel()
 	return nil
 }
