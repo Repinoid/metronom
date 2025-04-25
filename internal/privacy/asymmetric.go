@@ -1,9 +1,7 @@
 package privacy
 
 import (
-	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
 	"crypto/x509"
 	"encoding/pem"
 )
@@ -15,13 +13,10 @@ func Encrypt(msg []byte, publicKey []byte) (cipherByte []byte, err error) {
 	if err != nil {
 		panic(err)
 	}
-	pub := cert.PublicKey.(*rsa.PublicKey)
+	pubK := cert.PublicKey.(*rsa.PublicKey)
 
-	encryptOAEP, err := rsa.EncryptOAEP(sha1.New(), rand.Reader, pub, msg, nil)
-	if err != nil {
-		panic(err)
-	}
-	cipherByte = encryptOAEP
+	cipherByte, err = HybridEncrypt(pubK, msg)
+
 	return
 }
 
@@ -31,17 +26,12 @@ func Decrypt(cipherByte []byte, privateKey []byte) (plainText []byte, err error)
 	priBlock, _ := pem.Decode(privateKey)
 
 	priKey, err := x509.ParsePKCS1PrivateKey(priBlock.Bytes)
+	if err != nil {
+		panic(err)
+	}
 
-	if err != nil {
-		panic(err)
-	}
-	// Decrypt the contents of the RSA-OAEP mode encrypted
-	//pK := priKey.(*rsa.PrivateKey)
-	decryptOAEP, err := rsa.DecryptOAEP(sha1.New(), rand.Reader, priKey, cipherByte, nil)
-	if err != nil {
-		panic(err)
-	}
-	plainText = decryptOAEP
+	plainText, err = HybridDecrypt(priKey, cipherByte)
+
 	return
 }
 

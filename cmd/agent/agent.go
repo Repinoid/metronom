@@ -107,6 +107,7 @@ func run() error {
 	<-idleConnsClosed
 	// выполняем cancel контекста, metrixIN & bolda stop
 	cancel()
+	log.Println("Agent Shutdown gracefully")
 	return nil
 }
 
