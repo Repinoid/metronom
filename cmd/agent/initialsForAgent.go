@@ -11,7 +11,7 @@ import (
 
 // flags структура с параметрами агента в JSON файле
 type flagAgent struct {
-	Address         string `json:"address"`         // аналог переменной окружения ADDRESS или флага -a
+	Address        string `json:"address"`         // аналог переменной окружения ADDRESS или флага -a
 	ReportInterval string `json:"report_interval"` // аналог переменной окружения STORE_INTERVAL или флага -i
 	PollInterval   string `json:"poll_interval"`   // аналог переменной окружения STORE_INTERVAL или флага -i
 	CryptoKey      string `json:"crypto_key"`      // аналог переменной окружения CRYPTO_KEY или флага -crypto-key
@@ -55,14 +55,14 @@ func initAgent() error {
 		reportInterval = interval
 
 		host = prapor.Address
-		cryptoKey = prapor.CryptoKey
+		cryptoKeyFile = prapor.CryptoKey
 	}
 	// параметры из флагов
 	if hostFlag != "" {
 		host = hostFlag
 	}
 	if keyFlag != "" {
-		cryptoKey = keyFlag
+		cryptoKeyFile = keyFlag
 	}
 	if *reportIntervalFlag != 0 {
 		reportInterval = *reportIntervalFlag
@@ -80,7 +80,7 @@ func initAgent() error {
 	}
 	enva, exists = os.LookupEnv("CRYPTO_KEY")
 	if exists {
-		cryptoKey = enva
+		cryptoKeyFile = enva
 	}
 	enva, exists = os.LookupEnv("REPORT_INTERVAL")
 	if exists {
@@ -107,13 +107,15 @@ func initAgent() error {
 		return nil
 	}
 
-	if cryptoKey != "" {
+	if cryptoKeyFile != "" {
 		// pkb - public key in []byte
-		pkb, err := os.ReadFile(cryptoKey)
+		pkb, err := os.ReadFile(cryptoKeyFile)
 		if err != nil {
 			return err
 		}
 		publicKey = string(pkb)
+	} else {
+		return fmt.Errorf("no public key file")
 	}
 	return nil
 }

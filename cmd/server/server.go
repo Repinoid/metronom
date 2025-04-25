@@ -51,7 +51,7 @@ func main() {
 	}
 
 	if err := Run(); err != nil {
-		panic(err)
+		log.Printf("Server Shutdown by syscall, ListenAndServe message -  %v\n", err)
 	}
 }
 
@@ -116,7 +116,7 @@ func Run() (err error) {
 	// закрыть открытые файлы
 	models.Inter.Close()
 
-	fmt.Println("Server Shutdown gracefully")
+	log.Println("Server Shutdown gracefully")
 
 	return err
 }

@@ -55,7 +55,8 @@ func main() {
 	// используется для хранения и обмена криптографическими ключами
 	var certPEM bytes.Buffer
 	pem.Encode(&certPEM, &pem.Block{
-		Type:  "CERTIFICATE",
+		Type: "PUBLIC KEY",
+		//		Type:  "CERTIFICATE",
 		Bytes: certBytes,
 	})
 
@@ -64,6 +65,7 @@ func main() {
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	})
+
 	err = os.WriteFile("../agent/cert.pem", certPEM.Bytes(), 0666)
 	if err != nil {
 		log.Fatal(err)

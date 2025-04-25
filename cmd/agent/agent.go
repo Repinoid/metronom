@@ -26,7 +26,7 @@ var host = "localhost:8080"
 var (
 	reportInterval = 10
 	pollInterval   = 2
-	cryptoKey      = ""
+	cryptoKeyFile  = "cert.pem"
 	publicKey      = ""
 	rateLimit      = 4
 	cunt           int64
@@ -162,7 +162,7 @@ func bolda(ctx context.Context, metroBarn <-chan []models.Metrics, fenix <-chan 
 			if publicKey != "" {
 				//		keyB := md5.Sum([]byte(key))
 
-				coded, err := privacy.Encrypt(marshalledBunch, publicKey)
+				coded, err := privacy.Encrypt(marshalledBunch, []byte(publicKey))
 
 				//		coded, err := privacy.EncryptB2B(marshalledBunch, keyB[:])
 				if err != nil {
