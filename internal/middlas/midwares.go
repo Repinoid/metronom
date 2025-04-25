@@ -160,13 +160,13 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 			}
 			defer req.Body.Close()
 			// models.PrivateKey - содержимое файла в models.Key
-			telo, err = privacy.Decrypt(telo, []byte(models.PrivateKey))
+			teloDecr, err := privacy.Decrypt(telo, []byte(models.PrivateKey))
 			if err != nil {
 				rwr.WriteHeader(http.StatusBadRequest)
 				fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 				return
 			}
-			newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewBuffer(telo))
+			newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewBuffer(teloDecr))
 			if err != nil {
 				io.WriteString(rwr, err.Error())
 				return

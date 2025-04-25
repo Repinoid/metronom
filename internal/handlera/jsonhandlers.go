@@ -2,6 +2,7 @@
 package handlera
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -108,25 +109,29 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {
-		rwr.WriteHeader(http.StatusBadRequest+3)
+		rwr.WriteHeader(http.StatusBadRequest + 3)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		models.Sugar.Debugf("!!!!! io.ReadAll(req.Body) err %+v\n", err)
 		return
 	}
 	defer req.Body.Close()
 
-	metras, err := memos.MetrixUnMarhal(telo) // own json decoder
+	buf := bytes.NewBuffer(telo)
+	metras := []models.Metrics{}
+	err = json.NewDecoder(buf).Decode(&metras)
+
+	//metras, err := memos.MetrixUnMarhal(telo) // own json decoder
 
 	if err != nil {
-		rwr.WriteHeader(http.StatusBadRequest+1)
+		rwr.WriteHeader(http.StatusBadRequest + 1)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		models.Sugar.Debugf("bunch decode  err %+v\n", err)
 		return
 	}
 
-	err = basis.RetryMetricWrapper(models.Inter.PutAllMetrics)(req.Context(), nil, metras)
+	err = basis.RetryMetricWrapper(models.Inter.PutAllMetrics)(req.Context(), nil, &metras)
 	if err != nil {
-		rwr.WriteHeader(http.StatusBadRequest+2)
+		rwr.WriteHeader(http.StatusBadRequest + 2)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		models.Sugar.Debugf(" Put   err %+v\n", err)
 		return

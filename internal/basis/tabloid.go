@@ -210,7 +210,7 @@ func (dataBase *DBstruct) SaveMS(fnam string) error {
 }
 
 // для горутины сохранения метрик в файл. epmty function for DB
-func (dataBase *DBstruct) Saver(fnam string, i int) error {
+func (dataBase *DBstruct) Saver(ctx context.Context, fnam string, i int) error {
 	return nil
 }
 
@@ -227,6 +227,7 @@ func (dataBase *DBstruct) Ping(ctx context.Context, gag string) error {
 // DataBase Close
 func (dataBase *DBstruct) Close() {
 	dataBase.DB.Close()
+	log.Println("DataBase closed gracefully")
 	//return
 }
 

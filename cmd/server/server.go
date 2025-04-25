@@ -37,6 +37,7 @@ func main() {
 		log.Println(err, " no success for foa4Server() ")
 		return
 	}
+	ctx := context.Background()
 
 	fmt.Printf("Build version: %s\n", buildVersion)
 	fmt.Printf("Build date: %s\n", buildDate)
@@ -47,16 +48,16 @@ func main() {
 	}
 
 	if models.StoreInterval > 0 {
-		go models.Inter.Saver(models.FileStorePath, models.StoreInterval)
+		go models.Inter.Saver(ctx, models.FileStorePath, models.StoreInterval)
 	}
 
-	if err := Run(); err != nil {
+	if err := Run(ctx); err != nil {
 		log.Printf("Server Shutdown by syscall, ListenAndServe message -  %v\n", err)
 	}
 }
 
 // run. ЗАпуск сервера и хендлеры
-func Run() (err error) {
+func Run(ctx context.Context) (err error) {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", handlera.PutMetric).Methods("POST")
@@ -93,7 +94,7 @@ func Run() (err error) {
 		// можно обойтись без цикла
 		<-sigint
 		// получили сигнал os.Interrupt, запускаем процедуру graceful shutdown
-		if err := srv.Shutdown(context.Background()); err != nil {
+		if err := srv.Shutdown(ctx); err != nil {
 			// ошибки закрытия Listener
 			log.Printf("HTTP server Shutdown: %v", err)
 		}

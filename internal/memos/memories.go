@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -34,7 +35,7 @@ func InitMemoryStorage() *MemoryStorageStruct {
 	}
 	return &memStor
 }
- 
+
 // записать метрику в базу в памяти
 func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *models.Metrics, gag *[]models.Metrics) error {
 	if !IsMetricOK(*metr) {
@@ -217,12 +218,19 @@ func (memorial *MemoryStorageStruct) SaveMS(fnam string) error {
 }
 
 // для горутины - сохранение метрик через storeInterval секунд
-func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error {
+func (memorial *MemoryStorageStruct) Saver(ctx context.Context, fnam string, storeInterval int) error {
 	for {
-		time.Sleep(time.Duration(storeInterval) * time.Second)
-		err := memorial.SaveMS(fnam)
-		if err != nil {
-			return fmt.Errorf("save err %v", err)
+		select {
+		case <-ctx.Done():
+			log.Println("Saver остановлен")
+			return errors.New("Saver остановлен по сигналу")
+
+		default:
+			time.Sleep(time.Duration(storeInterval) * time.Second)
+			err := memorial.SaveMS(fnam)
+			if err != nil {
+				return fmt.Errorf("save err %v", err)
+			}
 		}
 	}
 }

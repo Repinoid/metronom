@@ -113,7 +113,7 @@ func initAgent() error {
 		if err != nil {
 			return err
 		}
-		publicKey = string(pkb)
+		cryptoKey = pkb
 	} /* else {
 		return fmt.Errorf("no public key file")
 	}*/

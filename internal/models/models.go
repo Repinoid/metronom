@@ -27,7 +27,7 @@ type Interferon interface {
 	Ping(ctx context.Context, dbepnt string) error
 	LoadMS(fnam string) error
 	SaveMS(fnam string) error
-	Saver(fnam string, storeInterval int) error
+	Saver(ctx context.Context, fnam string, storeInterval int) error
 	GetName() string
 	Close()
 }
