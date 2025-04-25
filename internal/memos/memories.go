@@ -226,6 +226,9 @@ func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error
 		}
 	}
 }
+func (memorial *MemoryStorageStruct) Close() {
+	return
+}
 
 // check if Metric has correct fields
 func IsMetricOK(metr models.Metrics) bool {

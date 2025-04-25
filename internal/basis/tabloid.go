@@ -224,6 +224,12 @@ func (dataBase *DBstruct) Ping(ctx context.Context, gag string) error {
 	return nil
 }
 
+// DataBase Close
+func (dataBase *DBstruct) Close() {
+	dataBase.DB.Close()
+	//return
+}
+
 // get name. to recognise who is in interface
 func (dataBase *DBstruct) GetName() string {
 	return "DBaser"

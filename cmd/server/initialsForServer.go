@@ -18,8 +18,8 @@ import (
 
 // flags структура с параметрами сервера в JSON файле
 type flagServer struct {
-	Address        string `json:"address"`        // аналог переменной окружения ADDRESS или флага -a
-	Restore        bool   `json:"restore"`        // аналог переменной окружения RESTORE или флага -r
+	Address       string `json:"address"`        // аналог переменной окружения ADDRESS или флага -a
+	Restore       bool   `json:"restore"`        // аналог переменной окружения RESTORE или флага -r
 	StoreInterval string `json:"store_interval"` // аналог переменной окружения STORE_INTERVAL или флага -i
 	StoreFile     string `json:"store_file"`     // аналог переменной окружения STORE_FILE или -f
 	DatabaseDsn   string `json:"database_dsn"`   // аналог переменной окружения DATABASE_DSN или флага -d
@@ -45,7 +45,7 @@ func InitServer() error {
 	var keyFlag string
 	var configFlag string
 
-	flag.StringVar(&configFlag, "c", "", "путь до файла с JSON конфигурации")	// "" - по умолчанию пусто
+	flag.StringVar(&configFlag, "c", "", "путь до файла с JSON конфигурации")      // "" - по умолчанию пусто
 	flag.StringVar(&configFlag, "config", "", "путь до файла с JSON конфигурации") // -c = -config
 	flag.StringVar(&keyFlag, "crypto-key", models.Key, "путь до файла с private ключом")
 	flag.StringVar(&dbFlag, "d", models.DBEndPoint, "Data Base endpoint")
@@ -136,6 +136,16 @@ func InitServer() error {
 	if hostFlag == "" {
 		return fmt.Errorf("no host parsed from arg string")
 	}
+
+	if models.Key != "" {
+		// pkb - private key in []byte
+		pkb, err := os.ReadFile(models.Key)
+		if err != nil {
+			return err
+		}
+		models.PrivateKey = string(pkb)
+	}
+
 	memStor := memos.InitMemoryStorage()
 
 	if models.DBEndPoint == "" {
@@ -154,15 +164,6 @@ func InitServer() error {
 		return nil
 	}
 	models.Inter = dbStorage // data base as Metric Storage
-
-	if models.Key != "" {
-		// pkb - private key in []byte
-		pkb, err := os.ReadFile(models.Key)
-		if err != nil {
-			return err
-		}
-		models.PrivateKey = string(pkb)
-	}
 
 	return nil
 }

@@ -114,7 +114,8 @@ func Run() (err error) {
 	// здесь можно освобождать ресурсы перед выходом,
 	// например закрыть соединение с базой данных,
 	// закрыть открытые файлы
-	
+	models.Inter.Close()
+
 	fmt.Println("Server Shutdown gracefully")
 
 	return err

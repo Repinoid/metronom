@@ -29,6 +29,7 @@ type Interferon interface {
 	SaveMS(fnam string) error
 	Saver(fnam string, storeInterval int) error
 	GetName() string
+	Close()
 }
 
 // переменные для логгера и получающие значения из аргументов командной строки
