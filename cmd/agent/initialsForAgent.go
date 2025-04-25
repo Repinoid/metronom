@@ -114,8 +114,8 @@ func initAgent() error {
 			return err
 		}
 		publicKey = string(pkb)
-	} else {
+	} /* else {
 		return fmt.Errorf("no public key file")
-	}
+	}*/
 	return nil
 }

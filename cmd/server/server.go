@@ -76,8 +76,6 @@ func Run() (err error) {
 
 	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
-	//servak := http.ListenAndServe(Host, router)
-
 	var srv = http.Server{Addr: Host, Handler: router}
 
 	idleConnsClosed := make(chan struct{})
@@ -112,8 +110,6 @@ func Run() (err error) {
 
 	// получили оповещение о завершении
 	// здесь можно освобождать ресурсы перед выходом,
-	// например закрыть соединение с базой данных,
-	// закрыть открытые файлы
 	models.Inter.Close()
 
 	log.Println("Server Shutdown gracefully")

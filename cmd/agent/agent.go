@@ -26,10 +26,11 @@ var host = "localhost:8080"
 var (
 	reportInterval = 10
 	pollInterval   = 2
-	cryptoKeyFile  = "cert.pem"
-	publicKey      = ""
-	rateLimit      = 4
-	cunt           int64
+	//	cryptoKeyFile  = ""
+	cryptoKeyFile = "cert.pem"
+	publicKey     = ""
+	rateLimit     = 4
+	cunt          int64
 )
 
 // Глобальные переменные для флага компилляции.

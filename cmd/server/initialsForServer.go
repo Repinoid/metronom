@@ -144,9 +144,9 @@ func InitServer() error {
 			return err
 		}
 		models.PrivateKey = string(pkb)
-	} else {
+	} /*else {
 		return fmt.Errorf("no private key file")
-	}
+	}*/
 
 	memStor := memos.InitMemoryStorage()
 

@@ -64,7 +64,7 @@ func WithLogging(next http.Handler) http.Handler {
 			"size", responseData.size, // получаем перехваченный размер ответа
 		)
 	}
-	
+
 	return http.HandlerFunc(loggedFunc)
 }
 
@@ -150,30 +150,35 @@ func GzipHandleDecoder(next http.Handler) http.Handler {
 // CryptoHandleDecoder middleware раскодировки криптографии
 func CryptoHandleDecoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
-		telo, err := io.ReadAll(req.Body)
-		if err != nil {
-			rwr.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-			return
+		// если указан  models.Key файл с private key
+		if models.Key != "" {
+			telo, err := io.ReadAll(req.Body)
+			if err != nil {
+				rwr.WriteHeader(http.StatusBadRequest)
+				fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+				return
+			}
+			defer req.Body.Close()
+			// models.PrivateKey - содержимое файла в models.Key
+			telo, err = privacy.Decrypt(telo, []byte(models.PrivateKey))
+			if err != nil {
+				rwr.WriteHeader(http.StatusBadRequest)
+				fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+				return
+			}
+			newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewBuffer(telo))
+			if err != nil {
+				io.WriteString(rwr, err.Error())
+				return
+			}
+			// cкопировать поля header
+			for name := range req.Header {
+				hea := req.Header.Get(name)
+				newReq.Header.Add(name, hea)
+			}
+			// переопределяем request
+			req = newReq
 		}
-		defer req.Body.Close()
-
-		telo, err = privacy.Decrypt(telo, []byte(models.PrivateKey))
-		if err != nil {
-			rwr.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-			return
-		}
-		newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewBuffer(telo))
-		if err != nil {
-			io.WriteString(rwr, err.Error())
-			return
-		}
-		for name := range req.Header { // cкопировать поля header
-			hea := req.Header.Get(name)
-			newReq.Header.Add(name, hea)
-		}
-		req = newReq
 		next.ServeHTTP(rwr, req)
 
 		// if haInHeader := req.Header.Get("HashSHA256"); haInHeader != "" { // если есть ключ переопределить req
