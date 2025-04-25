@@ -64,7 +64,6 @@ func Run() error {
 	router.HandleFunc("/", handlera.BadPost).Methods("POST") // if POST with wrong arguments structure
 	router.HandleFunc("/ping", handlera.DBPinger).Methods("GET")
 
-	//router.HandleFunc("/s", seconda).Methods("GET")
 
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
@@ -77,15 +76,3 @@ func Run() error {
 	return http.ListenAndServe(Host, router)
 }
 
-// func seconda(rwr http.ResponseWriter, req *http.Request) {
-// 	//	var DBEndPoint = "postgres://postgres:postgres@go_db:5432/postgres"
-
-// 	//	baza, err := pgx.Connect(context.Background(), DBEndPoint)
-// 	baza, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_DSN"))
-// 	if err != nil {
-// 		fmt.Fprintf(rwr, "NO pgx.Connect %v\n", err)
-// 		return
-// 	}
-// 	fmt.Fprintf(rwr, "PING OK %v %v\n", baza, time.Now())
-
-// }
