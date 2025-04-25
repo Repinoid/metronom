@@ -34,7 +34,7 @@ func InitMemoryStorage() *MemoryStorageStruct {
 	}
 	return &memStor
 }
-
+ 
 // записать метрику в базу в памяти
 func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *models.Metrics, gag *[]models.Metrics) error {
 	if !IsMetricOK(*metr) {
