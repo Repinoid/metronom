@@ -153,6 +153,7 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 			hh.ServeHTTP(w, request)               // запускаем handler
 
 			res := w.Result()
+			defer res.Body.Close()
 
 			if tt.AcceptEncoding == "gzip" {
 				//		if tt.ContentEncoding == "gzip" {
@@ -174,8 +175,7 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 			}
 			//			_= telo
 			suite.Assert().Equal(tt.want.code, w.Result().StatusCode)
-			
-			res.Body.Close()
+
 			//suite.Assert().JSONEq(tt.want.response, string(telo))
 
 		})
