@@ -1,6 +1,7 @@
 package memos
 
 import (
+	"context"
 	"os"
 
 	"gorono/internal/middlas"
@@ -72,9 +73,11 @@ func (suite *TstMemo) Test03Mem() {
 func (suite *TstMemo) Test04Mem() {
 	med, err := suite.memorial.MarshalMS()
 	suite.Require().NoError(err)
+	
 	tstMemorial := InitMemoryStorage()
 	err = tstMemorial.UnmarshalMS(med)
 	suite.Require().NoError(err)
+
 	suite.Require().EqualValues(suite.memorial, tstMemorial)
 
 	suite.Require().Equal("Memorial", suite.memorial.GetName())
@@ -92,6 +95,29 @@ func (suite *TstMemo) Test04Mem() {
 	suite.Require().EqualValues(suite.memorial, tstMemorial)
 
 	err = os.Remove("kut.metr")
+	suite.Require().NoError(err)
+
+	metras := GetMetrixFromOS()
+	suite.Require().Equal(len(*metras), 29)
+
+	metras = GetMoreMetrix()
+	suite.Require().Equal(len(*metras), 3)
+
+	suite.memorial.Close()
+
+}
+
+func (suite *TstMemo) Test05Saver() {
+
+	err := suite.memorial.Saver(suite.ctx, "tt://f.out", 1)
+	suite.Require().Error(err)
+	
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err = suite.memorial.Saver(ctx, "f.out", 1)
+	suite.Require().Contains(err.Error(), "Saver остановлен по сигналу")
+
+	err = os.Remove("f.out")
 	suite.Require().NoError(err)
 
 }

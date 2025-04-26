@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"go.uber.org/zap"
@@ -81,7 +82,8 @@ func BenchmarkNoSugar(b *testing.B) {
 	}
 }
 
-func thecap(rwr http.ResponseWriter, req *http.Request) { // хандлер для теста - что пришло, то и ушло
+// хандлер для теста - что пришло, то и ушло
+func thecap(rwr http.ResponseWriter, req *http.Request) {
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
@@ -90,4 +92,23 @@ func thecap(rwr http.ResponseWriter, req *http.Request) { // хандлер дл
 	}
 	defer req.Body.Close()
 	rwr.Write(telo)
+}
+
+func (suite *TstMid) Test07zips() {
+
+	fromFile, err := os.ReadFile("../../cmd/server/server.exe")
+	suite.Assert().NoError(err)
+
+	bts, err := Pack2gzip(fromFile)
+	suite.Assert().NoError(err)
+
+	unp, err := UnpackFromGzip(bytes.NewReader(bts))
+	suite.Assert().NoError(err)
+
+	buf := &bytes.Buffer{}
+	_, err = buf.ReadFrom(unp)
+	suite.Assert().NoError(err)
+
+	suite.Assert().True(bytes.Equal(fromFile, buf.Bytes() ))
+
 }

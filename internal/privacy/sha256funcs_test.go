@@ -1,7 +1,9 @@
 package privacy
 
 import (
+	"bytes"
 	"crypto/md5"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,4 +27,25 @@ func TestEncryptB2B(t *testing.T) {
 
 	require.Equal(t, testingString, string(telo))
 
+}
+func TestAssym(t *testing.T) {
+	// any file for testing bytes
+	acc, err := os.ReadFile("../../cmd/agent/agent.exe")
+	require.NoError(t, err)
+
+	// Public Key File
+	pkb, err := os.ReadFile("../../cmd/agent/cert.pem")
+	require.NoError(t, err)
+
+	// Private key file
+	priv, err := os.ReadFile("../../cmd/server/privateKey.pem")
+	require.NoError(t, err)
+
+	cipherByte, err := Encrypt(acc, pkb)
+	require.NoError(t, err)
+
+	txt, err := Decrypt(cipherByte, priv)
+	require.NoError(t, err)
+
+	require.True(t, bytes.Equal(acc, txt))
 }

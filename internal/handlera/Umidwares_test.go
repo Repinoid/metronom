@@ -179,7 +179,6 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 		})
 	}
 }
-
 func (suite *TstHandlers) Test_01BadBunch() {
 	request := httptest.NewRequest(http.MethodPost, "/updates/", bytes.NewBuffer([]byte("hzwhat")))
 	w := httptest.NewRecorder()
@@ -211,6 +210,7 @@ func (suite *TstHandlers) Test_01BadBunch() {
 	// suite.Assert().Equal(http.StatusBadRequest, res.StatusCode)
 
 }
+
 
 // хандлер для теста - что пришло, то и ушло
 func thecap(rwr http.ResponseWriter, req *http.Request) {

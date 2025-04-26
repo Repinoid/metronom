@@ -12,6 +12,9 @@ import (
 	"gorono/internal/models"
 )
 
+// GzipHandleEncoder & GzipHandleDecoder протестированы в пакете handlers
+
+
 type TstMid struct {
 	suite.Suite
 	startTime time.Time

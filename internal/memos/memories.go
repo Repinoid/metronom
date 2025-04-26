@@ -48,8 +48,8 @@ func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *models
 		memorial.Gaugemetr[metr.ID] = models.Gauge(*metr.Value)
 	case "counter":
 		memorial.Countmetr[metr.ID] += models.Counter(*metr.Delta)
-	default:
-		return fmt.Errorf("wrong type %s", metr.MType)
+		//	default:
+		//		return fmt.Errorf("wrong type %s", metr.MType)
 	}
 	return nil
 }
@@ -59,6 +59,9 @@ func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *models
 	memorial.Mutter.RLock() // <---- MUTEX
 	defer memorial.Mutter.RUnlock()
 	//	metrix := models.Metrics{ID: metr.ID, MType: metr.MType} // new pure models.Metrics to return, nil Delta&Value ptrs
+	// if !IsMetricOK(*metr) {
+	// 	return fmt.Errorf("bad metric %+v", metr)
+	// }
 	switch metr.MType {
 	case "gauge":
 		if val, ok := memorial.Gaugemetr[metr.ID]; ok {
@@ -74,8 +77,8 @@ func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *models
 			break
 		}
 		return fmt.Errorf("unknown metric %+v", metr)
-	default:
-		return fmt.Errorf("wrong type %s", metr.MType)
+		//	default:
+		//		return fmt.Errorf("wrong type %s", metr.MType)
 	}
 	return nil
 }

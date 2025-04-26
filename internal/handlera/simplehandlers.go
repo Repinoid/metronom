@@ -71,10 +71,10 @@ func GetMetric(rwr http.ResponseWriter, req *http.Request) {
 	case "counter":
 		rwr.WriteHeader(http.StatusOK)
 		fmt.Fprint(rwr, *metr.Delta)
-	// default:
-	// 	rwr.WriteHeader(http.StatusNotFound)
-	// 	fmt.Fprintf(rwr, `{"wrong metric type":"%s"}`, metricType)
-	// 	return
+		// default:
+		// 	rwr.WriteHeader(http.StatusNotFound)
+		// 	fmt.Fprintf(rwr, `{"wrong metric type":"%s"}`, metricType)
+		// 	return
 	}
 }
 
