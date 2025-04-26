@@ -153,8 +153,8 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 			hh.ServeHTTP(w, request)               // запускаем handler
 
 			res := w.Body // ответ
-			defer w.Result().Body.Close()
-//			var telo []byte
+
+			//			var telo []byte
 
 			if tt.AcceptEncoding == "gzip" {
 				//		if tt.ContentEncoding == "gzip" {
@@ -174,8 +174,9 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 					log.Printf("ContentEncoding == \"gzip\" io.ReadAll %+v\n", err)
 				}
 			}
-//			_= telo
+			//			_= telo
 			suite.Assert().Equal(tt.want.code, w.Result().StatusCode)
+			w.Result().Body.Close()
 			//suite.Assert().JSONEq(tt.want.response, string(telo))
 
 		})
@@ -196,8 +197,6 @@ func (suite *TstHandlers) Test_01BadBunch() {
 	res = w.Result()
 	defer res.Body.Close()
 	suite.Assert().Equal(http.StatusBadRequest, res.StatusCode)
-
-
 
 	// controlMetric := models.Metrics{MType: "gauge", ID: "Alloc", Value: middlas.Ptr[float64](78)}
 	// //cmMarshalled, _ := json.Marshal(controlMetric)
