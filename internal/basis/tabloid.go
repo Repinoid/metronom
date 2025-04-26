@@ -90,8 +90,8 @@ func (dataBase *DBstruct) PutMetric(ctx context.Context, metr *Metrics, gag *[]M
 		order = fmt.Sprintf("INSERT INTO Counter AS args(metricname, value) VALUES ('%[1]s',%[2]d) ", metr.ID, *metr.Delta)
 		order += "ON CONFLICT (metricname) DO UPDATE SET metricname=args.metricname, value=args.value+EXCLUDED.value;"
 		// args.value - старое значение. EXCLUDED.value - новое, переданное для вставки или обновления
-	default:
-		return fmt.Errorf("wrong type %s", metr.MType)
+		// default:
+		// 	return fmt.Errorf("wrong type %s", metr.MType)
 	}
 	_, err := db.Exec(ctx, order)
 	if err != nil {
@@ -152,9 +152,9 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, gag *Metrics, metra
 			order = fmt.Sprintf("INSERT INTO Counter AS args(metricname, value) VALUES ('%[1]s',%[2]d) ", metr.ID, *metr.Delta)
 			order += "ON CONFLICT (metricname) DO UPDATE SET metricname=args.metricname, value=args.value+EXCLUDED.value;"
 			// args.value - старое значение. EXCLUDED.value - новое, переданное для вставки или обновления
-		default:
-			log.Printf("wrong metric type \"%s\"\n", metr.MType)
-			continue
+			// default:
+			// 	log.Printf("wrong metric type \"%s\"\n", metr.MType)
+			// 	continue
 		}
 		_, err := tx.Exec(ctx, order)
 		if err != nil {
