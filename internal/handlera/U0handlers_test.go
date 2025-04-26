@@ -22,6 +22,8 @@ type TstHandlers struct {
 	wt  models.Interferon
 }
 
+// некоторые закоулки if err != nil просто недостижимы, т.к. корректность метрик проверяется неоднократно. поэтому coverage недостаточно высок
+
 func (suite *TstHandlers) SetupSuite() { // выполняется перед тестами
 	suite.ctx = context.Background()
 	suite.t = time.Now()

@@ -153,7 +153,8 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 			hh.ServeHTTP(w, request)               // запускаем handler
 
 			res := w.Body // ответ
-			var telo []byte
+			defer w.Result().Body.Close()
+//			var telo []byte
 
 			if tt.AcceptEncoding == "gzip" {
 				//		if tt.ContentEncoding == "gzip" {
@@ -161,19 +162,19 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 				if err != nil {
 					log.Printf("UnpackFromGzip %+v\n", err)
 				}
-				telo, err = io.ReadAll(unpak)
+				_, err = io.ReadAll(unpak)
 				if err != nil {
 					log.Printf("AcceptEncoding == \"gzip\" io.ReadAll %+v\n", err)
 				}
 			}
 			if tt.ContentEncoding == "gzip" {
 				var err error
-				telo, err = io.ReadAll(res)
+				_, err = io.ReadAll(res)
 				if err != nil {
 					log.Printf("ContentEncoding == \"gzip\" io.ReadAll %+v\n", err)
 				}
 			}
-			_= telo
+//			_= telo
 			suite.Assert().Equal(tt.want.code, w.Result().StatusCode)
 			//suite.Assert().JSONEq(tt.want.response, string(telo))
 
