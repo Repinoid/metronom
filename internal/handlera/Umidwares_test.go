@@ -15,7 +15,7 @@ import (
 )
 
 // test GzipHandleEncoder middleware on different metrics functions
-func (suite *TstHandlers) Test_gzipPutGet() {
+func (suite *TstHandlers) Test_01gzipPutGet() {
 	type want struct {
 		code     int
 		response string

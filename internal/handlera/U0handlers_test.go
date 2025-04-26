@@ -65,13 +65,13 @@ func TestHandlersSuite(t *testing.T) {
 		log.Println("basis.InitDBStorage 2222")
 		return
 	}
-
-	testHandler.wt = dbStorage // тест для базы в постгрес
+	// тест для базы в постгрес
+	testHandler.wt = dbStorage
 	log.Println("before run basis.InitDBStorage")
 	suite.Run(t, testHandler)
 
-	testHandler.wt = memos.InitMemoryStorage() // тест для базы в памяти
+	// тест для базы в памяти
+	testHandler.wt = memos.InitMemoryStorage()
 	log.Println("before run memos.InitMemoryStorage")
 	suite.Run(t, testHandler)
 }
-

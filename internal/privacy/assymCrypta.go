@@ -18,7 +18,7 @@ func Encrypt(dataToEncrypt, publicKey []byte) (cipherByte []byte, err error) {
 		return nil, err
 	}
 	pub := cert.PublicKey.(*rsa.PublicKey)
-
+//pub.Size()
 	// Generate a random symmetric key
 	symKey := make([]byte, 32) // 256-bit AES key
 	if _, err := rand.Read(symKey); err != nil {
