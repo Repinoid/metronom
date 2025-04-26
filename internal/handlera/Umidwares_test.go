@@ -152,13 +152,11 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 			hh := middlas.GzipHandleEncoder(hfunc) // оборачиваем в мидлварь который зипует
 			hh.ServeHTTP(w, request)               // запускаем handler
 
-			res := w.Body // ответ
-
-			//			var telo []byte
+			res := w.Result()
 
 			if tt.AcceptEncoding == "gzip" {
 				//		if tt.ContentEncoding == "gzip" {
-				unpak, err := middlas.UnpackFromGzip(res) // распаковка
+				unpak, err := middlas.UnpackFromGzip(w.Body) // распаковка
 				if err != nil {
 					log.Printf("UnpackFromGzip %+v\n", err)
 				}
@@ -169,14 +167,15 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 			}
 			if tt.ContentEncoding == "gzip" {
 				var err error
-				_, err = io.ReadAll(res)
+				_, err = io.ReadAll(w.Body)
 				if err != nil {
 					log.Printf("ContentEncoding == \"gzip\" io.ReadAll %+v\n", err)
 				}
 			}
 			//			_= telo
 			suite.Assert().Equal(tt.want.code, w.Result().StatusCode)
-			w.Result().Body.Close()
+			
+			res.Body.Close()
 			//suite.Assert().JSONEq(tt.want.response, string(telo))
 
 		})
