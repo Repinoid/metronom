@@ -3,8 +3,6 @@ package handlera
 
 import (
 	"bytes"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,7 +12,6 @@ import (
 	"gorono/internal/basis"
 	"gorono/internal/memos"
 	"gorono/internal/models"
-	"gorono/internal/privacy"
 )
 
 // GetJSONMetric - возвращает метрику по запросу методом POST.

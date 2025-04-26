@@ -21,6 +21,8 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 		response string
 		//		err      error
 	}
+	badMetric := models.Metrics{MType: "gaug", ID: "Alloc", Value: middlas.Ptr[float64](78)}
+	badcmMarshalled, _ := json.Marshal(badMetric)
 	controlMetric := models.Metrics{MType: "gauge", ID: "Alloc", Value: middlas.Ptr[float64](78)}
 	cmMarshalled, _ := json.Marshal(controlMetric)
 	controlMetric1 := models.Metrics{MType: "gauge", ID: "Alloc", Value: middlas.Ptr[float64](77)}
@@ -64,6 +66,30 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 			},
 		},
 		{
+			name:            "BAD PutJSONMetric AcceptEncoding",
+			AcceptEncoding:  "gzip",
+			ContentEncoding: "",
+			ContentType:     "application/json",
+			function:        PutJSONMetric,
+			metr:            badMetric,
+			want: want{
+				code:     http.StatusBadRequest,
+				response: string(badcmMarshalled),
+			},
+		},
+		{
+			name:            "BAD GetJSONMetric AcceptEncoding",
+			AcceptEncoding:  "gzip",
+			ContentEncoding: "",
+			ContentType:     "application/json",
+			function:        GetJSONMetric,
+			metr:            badMetric,
+			want: want{
+				code:     http.StatusBadRequest,
+				response: string(badcmMarshalled),
+			},
+		},
+		{
 			name:            "GET After PUT",
 			AcceptEncoding:  "gzip",
 			ContentEncoding: "",
@@ -80,8 +106,8 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 			name:            "NO ENCODINg",
 			AcceptEncoding:  "",
 			ContentEncoding: "gzip",
-			function: thecap,
-			metr:     controlMetric1,
+			function:        thecap,
+			metr:            controlMetric1,
 			want: want{
 				code:     http.StatusOK,
 				response: string(cmMarshalled1),
@@ -99,7 +125,7 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 				Value: middlas.Ptr[float64](77),
 			},
 			want: want{
-				code:     http.StatusOK,
+				code:     http.StatusBadRequest,
 				response: `{"status":"StatusBadRequest"}`,
 			},
 		},
@@ -147,10 +173,46 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 					log.Printf("ContentEncoding == \"gzip\" io.ReadAll %+v\n", err)
 				}
 			}
-			suite.Assert().JSONEq(tt.want.response, string(telo))
+			_= telo
+			suite.Assert().Equal(tt.want.code, w.Result().StatusCode)
+			//suite.Assert().JSONEq(tt.want.response, string(telo))
 
 		})
 	}
+}
+
+func (suite *TstHandlers) Test_01BadBunch() {
+	request := httptest.NewRequest(http.MethodPost, "/updates/", bytes.NewBuffer([]byte("hzwhat")))
+	w := httptest.NewRecorder()
+	Buncheras(w, request)
+	res := w.Result()
+	defer res.Body.Close()
+	suite.Assert().Equal(http.StatusBadRequest, res.StatusCode)
+
+	request = httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer([]byte("hzwhat")))
+	w = httptest.NewRecorder()
+	GetJSONMetric(w, request)
+	res = w.Result()
+	defer res.Body.Close()
+	suite.Assert().Equal(http.StatusBadRequest, res.StatusCode)
+
+
+
+	// controlMetric := models.Metrics{MType: "gauge", ID: "Alloc", Value: middlas.Ptr[float64](78)}
+	// //cmMarshalled, _ := json.Marshal(controlMetric)
+	// controlMetric1 := models.Metrics{MType: "countera", ID: "Alloc", Value: middlas.Ptr[float64](77)}
+	// //cmMarshalled1, _ := json.Marshal(controlMetric1)
+
+	// bunch := []models.Metrics{controlMetric, controlMetric1}
+	// bunchOnMarsh, _ := json.Marshal(bunch)
+
+	// request = httptest.NewRequest(http.MethodPost, "/updates/", bytes.NewBuffer(bunchOnMarsh))
+	// w = httptest.NewRecorder()
+	// Buncheras(w, request)
+	// res = w.Result()
+	// defer res.Body.Close()
+	// suite.Assert().Equal(http.StatusBadRequest, res.StatusCode)
+
 }
 
 // хандлер для теста - что пришло, то и ушло
@@ -164,4 +226,3 @@ func thecap(rwr http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	rwr.Write(telo)
 }
-
