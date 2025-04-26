@@ -174,7 +174,7 @@ func (suite *TstHandlers) Test_01gzipPutGet() {
 				}
 			}
 			//			_= telo
-			suite.Assert().Equal(tt.want.code, w.Result().StatusCode)
+			suite.Assert().Equal(tt.want.code, res.StatusCode)
 
 			//suite.Assert().JSONEq(tt.want.response, string(telo))
 
