@@ -2,7 +2,6 @@ package middlas
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -82,18 +81,6 @@ func BenchmarkNoSugar(b *testing.B) {
 	}
 }
 
-// хандлер для теста - что пришло, то и ушло
-func thecap(rwr http.ResponseWriter, req *http.Request) {
-	telo, err := io.ReadAll(req.Body)
-	if err != nil {
-		rwr.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
-		return
-	}
-	defer req.Body.Close()
-	rwr.Write(telo)
-}
-
 func (suite *TstMid) Test07zips() {
 
 	fromFile, err := os.ReadFile("../../cmd/server/server.exe")
@@ -109,6 +96,6 @@ func (suite *TstMid) Test07zips() {
 	_, err = buf.ReadFrom(unp)
 	suite.Assert().NoError(err)
 
-	suite.Assert().True(bytes.Equal(fromFile, buf.Bytes() ))
+	suite.Assert().True(bytes.Equal(fromFile, buf.Bytes()))
 
 }

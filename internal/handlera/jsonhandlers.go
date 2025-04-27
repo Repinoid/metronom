@@ -36,6 +36,7 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		models.Sugar.Debugf("json.Unmarshal %+v err %+v\n", metr, err)
 		return
 	}
+
 	err = basis.RetryMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err == nil { // if ништяк
 		rwr.WriteHeader(http.StatusOK)
@@ -79,6 +80,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
+	
 	err = basis.RetryMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)

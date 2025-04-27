@@ -154,7 +154,9 @@ func ExampleGetJSONMetric() {
 	}
 	metr := models.Metrics{}
 	err = json.Unmarshal([]byte(telo), &metr)
-
+	if err != nil {
+		return
+	}
 	fmt.Println(metr.MType, metr.ID, *metr.Value)
 
 	// Output:

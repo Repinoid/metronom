@@ -181,6 +181,8 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(rwr, req)
 
+		// от ранней версии шифрования
+		//
 		// if haInHeader := req.Header.Get("HashSHA256"); haInHeader != "" { // если есть ключ переопределить req
 		// 	telo, err := io.ReadAll(req.Body)
 		// 	if err != nil {
