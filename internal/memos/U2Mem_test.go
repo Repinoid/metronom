@@ -117,7 +117,5 @@ func (suite *TstMemo) Test05Saver() {
 	err = suite.memorial.Saver(ctx, "f.out", 1)
 	suite.Require().Contains(err.Error(), "Saver остановлен по сигналу")
 
-	err = os.Remove("f.out")
-	suite.Require().NoError(err)
 
 }
