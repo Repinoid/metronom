@@ -194,21 +194,6 @@ func (suite *TstHandlers) Test_01BadBunch() {
 	defer res.Body.Close()
 	suite.Assert().Equal(http.StatusBadRequest, res.StatusCode)
 
-	// controlMetric := models.Metrics{MType: "gauge", ID: "Alloc", Value: middlas.Ptr[float64](78)}
-	// //cmMarshalled, _ := json.Marshal(controlMetric)
-	// controlMetric1 := models.Metrics{MType: "countera", ID: "Alloc", Value: middlas.Ptr[float64](77)}
-	// //cmMarshalled1, _ := json.Marshal(controlMetric1)
-
-	// bunch := []models.Metrics{controlMetric, controlMetric1}
-	// bunchOnMarsh, _ := json.Marshal(bunch)
-
-	// request = httptest.NewRequest(http.MethodPost, "/updates/", bytes.NewBuffer(bunchOnMarsh))
-	// w = httptest.NewRecorder()
-	// Buncheras(w, request)
-	// res = w.Result()
-	// defer res.Body.Close()
-	// suite.Assert().Equal(http.StatusBadRequest, res.StatusCode)
-
 }
 
 

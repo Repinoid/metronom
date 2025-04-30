@@ -157,9 +157,6 @@ func (suite *TstHandlers) Test_06GetAllMetricsHandler() {
 	w = httptest.NewRecorder()
 	PutMetric(w, request)
 
-	// so add gauge metric
-	//suite.Test_SimplePutGet()
-
 	request = httptest.NewRequest(http.MethodGet, "/", nil)
 	w = httptest.NewRecorder()
 	GetAllMetricsHandler(w, request)

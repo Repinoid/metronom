@@ -3,6 +3,7 @@ package basis
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	"gorono/internal/middlas"
 	"gorono/internal/models"
@@ -153,12 +154,6 @@ func (suite *TstBase) Test02DBstruct_PutAllMetrics() {
 			err := suite.dataBase.PutAllMetrics(suite.ctx, nil, &tt.metras) //*[]Metrics)
 			// suite.dataBase.GetMetric(suite.ctx, &tt.metr, nil)
 			suite.Require().Equal(err != nil, tt.wantErr)
-			// if err == nil {
-			// 	gm, _ := json.Marshal(tt.metras)
-
-			// 	//	reflect.DeepEqual(m1, m2)
-			// 	suite.Require().JSONEq(string(gm), string(gm1))
-			// }
 		})
 	}
 }
@@ -198,7 +193,11 @@ func (suite *TstBase) Test02XXDBstruct_rests() {
 	suite.Require().NoError(err)
 	err = suite.dataBase.SaveMS("s")
 	suite.Require().NoError(err)
-	err = suite.dataBase.Saver(suite.ctx, "", 0)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	err = suite.dataBase.Saver(suite.ctx, "", 0, &wg)
+
 	suite.Require().NoError(err)
 	err = suite.dataBase.Ping(suite.ctx, "")
 	suite.Require().NoError(err)
@@ -214,7 +213,7 @@ func (suite *TstBase) TestXX_PingAfterDBClose() {
 	suite.Require().Error(err)
 
 	metras := []models.Metrics{{MType: "gauge", ID: "Ga"},
-				{MType: "counter", ID: "Co", Delta: middlas.Ptr[int64](777)}}
+		{MType: "counter", ID: "Co", Delta: middlas.Ptr[int64](777)}}
 	err = suite.dataBase.PutAllMetrics(suite.ctx, nil, &metras)
 	suite.Require().Error(err)
 	err = suite.dataBase.GetAllMetrics(suite.ctx, nil, &metras)

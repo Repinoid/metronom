@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -12,14 +13,6 @@ import (
 	"gorono/internal/models"
 )
 
-// Метрика.
-//
-//	 type Metrics struct {
-//		ID    string   `json:"id"`              // имя метрики
-//		MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-//		Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-//		Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-//	}
 type Metrics = models.Metrics
 
 // Структура для базы данных.
@@ -210,7 +203,8 @@ func (dataBase *DBstruct) SaveMS(fnam string) error {
 }
 
 // для горутины сохранения метрик в файл. epmty function for DB
-func (dataBase *DBstruct) Saver(ctx context.Context, fnam string, i int) error {
+func (dataBase *DBstruct) Saver(ctx context.Context, fnam string, i int, wg *sync.WaitGroup) error {
+	wg.Done()
 	return nil
 }
 
@@ -228,7 +222,6 @@ func (dataBase *DBstruct) Ping(ctx context.Context, gag string) error {
 func (dataBase *DBstruct) Close() {
 	dataBase.DB.Close()
 	log.Println("DataBase closed gracefully")
-	//return
 }
 
 // get name. to recognise who is in interface

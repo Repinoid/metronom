@@ -3,6 +3,7 @@ package memos
 import (
 	"context"
 	"os"
+	"sync"
 
 	"gorono/internal/middlas"
 	"gorono/internal/models"
@@ -73,7 +74,7 @@ func (suite *TstMemo) Test03Mem() {
 func (suite *TstMemo) Test04Mem() {
 	med, err := suite.memorial.MarshalMS()
 	suite.Require().NoError(err)
-	
+
 	tstMemorial := InitMemoryStorage()
 	err = tstMemorial.UnmarshalMS(med)
 	suite.Require().NoError(err)
@@ -109,13 +110,16 @@ func (suite *TstMemo) Test04Mem() {
 
 func (suite *TstMemo) Test05Saver() {
 
-	err := suite.memorial.Saver(suite.ctx, "tt://f.out", 1)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	err := suite.memorial.Saver(suite.ctx, "tt://f.out", 1, &wg)
 	suite.Require().Error(err)
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err = suite.memorial.Saver(ctx, "f.out", 1)
+	
+	wg.Add(1)
+	err = suite.memorial.Saver(ctx, "f.out", 1, &wg)
 	suite.Require().Contains(err.Error(), "Saver остановлен по сигналу")
-
 
 }

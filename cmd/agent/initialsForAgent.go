@@ -29,7 +29,7 @@ func initAgent() error {
 	flag.StringVar(&keyFlag, "crypto-key", "", "путь до файла с публичным ключом")
 	reportIntervalFlag := flag.Int("r", reportInterval, "reportInterval")
 	pollIntervalFlag := flag.Int("p", pollInterval, "pollIntervalFlag")
-	rateLimitFlag := flag.Int("l", pollInterval, "pollIntervalFlag")
+	rateLimitFlag := flag.Int("l", rateLimit, "pollIntervalFlag")
 	flag.Parse()
 
 	// с наименьшим приоритетом параметры агента из JSON файла

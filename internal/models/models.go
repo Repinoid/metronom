@@ -3,6 +3,7 @@ package models
 
 import (
 	"context"
+	"sync"
 
 	"go.uber.org/zap"
 )
@@ -27,7 +28,7 @@ type Interferon interface {
 	Ping(ctx context.Context, dbepnt string) error
 	LoadMS(fnam string) error
 	SaveMS(fnam string) error
-	Saver(ctx context.Context, fnam string, storeInterval int) error
+	Saver(ctx context.Context, fnam string, storeInterval int, wg *sync.WaitGroup) error
 	GetName() string
 	Close()
 }
@@ -41,7 +42,7 @@ var (
 	FileStorePath = "./goshran.txt" // файл для сохранения метрик
 	ReStore       = true            // надо ли сохранять метрики в файл
 	DBEndPoint    = ""              // endpoint базы данных
-	//	Key           string = ""              // file name with private key
+	//Key           string = ""              // file name with private key
 	Key        string = "privateKey.pem" // file name with private key
 	PrivateKey string = ""               // private key, содержится в файле с именем в Key
 

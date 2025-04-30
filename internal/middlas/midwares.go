@@ -181,45 +181,5 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(rwr, req)
 
-		// от ранней версии шифрования
-		//
-		// if haInHeader := req.Header.Get("HashSHA256"); haInHeader != "" { // если есть ключ переопределить req
-		// 	telo, err := io.ReadAll(req.Body)
-		// 	if err != nil {
-		// 		rwr.WriteHeader(http.StatusBadRequest)
-		// 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-		// 		return
-		// 	}
-		// 	defer req.Body.Close()
-
-		// 	keyB := md5.Sum([]byte(models.Key)) //[]byte(key)
-		// 	ha := privacy.MakeHash(nil, telo, keyB[:])
-		// 	haHex := hex.EncodeToString(ha)
-
-		// 	//			log.Printf("%s from KEY %s\n%s from Header\n", haHex, models.Key, haInHeader)
-
-		// 	if haHex != haInHeader { // несовпадение хешей вычисленного по ключу и переданного в header
-		// 		rwr.WriteHeader(http.StatusBadRequest)
-		// 		fmt.Fprintf(rwr, `{"wrong hash":"%s"}`, haInHeader)
-		// 		return
-		// 	}
-		// 	telo, err = privacy.DecryptB2B(telo, keyB[:])
-		// 	if err != nil {
-		// 		rwr.WriteHeader(http.StatusBadRequest)
-		// 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-		// 		return
-		// 	}
-		// 	newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewBuffer(telo))
-		// 	if err != nil {
-		// 		io.WriteString(rwr, err.Error())
-		// 		return
-		// 	}
-		// 	for name := range req.Header { // cкопировать поля header
-		// 		hea := req.Header.Get(name)
-		// 		newReq.Header.Add(name, hea)
-		// 	}
-		// 	req = newReq
-		// }
-		// next.ServeHTTP(rwr, req)
 	})
 }

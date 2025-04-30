@@ -136,22 +136,6 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// models.Key задаётся переменной откружения или аргументом -k
-	// if models.Key != "" {
-	// 	//хеш-функция — MD5 из пакета https://pkg.go.dev/crypto/md5. Bозвращает хеш длиной 16 байт.
-	// 	keyB16 := md5.Sum([]byte(models.Key))
-
-	// 	keyB := keyB16[:]                            // keyB16 [16]byte => keyB []byte
-	// 	coded, err := privacy.EncryptB2B(telo, keyB) // кодируем telo => coded
-	// 	if err != nil {
-	// 		models.Sugar.Debugf("encrypt   err %+v\n", err)
-	// 		return
-	// 	}
-	// 	ha := privacy.MakeHash(nil, coded, keyB)
-	// 	haHex := hex.EncodeToString(ha)       // EncodeToString returns the hexadecimal encoding of src.
-	// 	rwr.Header().Add("HashSHA256", haHex) // добавляем в заголовок хэш
-	// }
-
 	rwr.WriteHeader(http.StatusOK)
 	json.NewEncoder(rwr).Encode(metras) // return marshalled metrics slice
 }

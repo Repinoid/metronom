@@ -9,6 +9,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/gorilla/mux"
@@ -37,7 +38,6 @@ func main() {
 		log.Println(err, " no success for foa4Server() ")
 		return
 	}
-	ctx := context.Background()
 
 	fmt.Printf("Build version: %s\n", buildVersion)
 	fmt.Printf("Build date: %s\n", buildDate)
@@ -47,17 +47,13 @@ func main() {
 		_ = models.Inter.LoadMS(models.FileStorePath)
 	}
 
-	if models.StoreInterval > 0 {
-		go models.Inter.Saver(ctx, models.FileStorePath, models.StoreInterval)
-	}
-
-	if err := Run(ctx); err != nil {
+	if err := Run(); err != nil {
 		log.Printf("Server Shutdown by syscall, ListenAndServe message -  %v\n", err)
 	}
 }
 
-// run. ЗАпуск сервера и хендлеры
-func Run(ctx context.Context) (err error) {
+// run. Запуск сервера и хендлеры
+func Run() (err error) {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", handlera.PutMetric).Methods("POST")
@@ -77,40 +73,38 @@ func Run(ctx context.Context) (err error) {
 
 	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
+	//
 	var srv = http.Server{Addr: Host, Handler: router}
 
-	idleConnsClosed := make(chan struct{})
-	// канал для перенаправления прерываний
-	// поскольку нужно отловить всего одно прерывание,
-	// ёмкости 1 для канала будет достаточно
-	sigint := make(chan os.Signal, 1)
-	// регистрируем перенаправление прерываний
-	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	ctx, cancel := context.WithCancel(context.Background())
 
-	// запускаем горутину обработки пойманных прерываний
 	go func() {
-		// читаем из канала прерываний
-		// поскольку нужно прочитать только одно прерывание,
-		// можно обойтись без цикла
-		<-sigint
-		// получили сигнал os.Interrupt, запускаем процедуру graceful shutdown
-		if err := srv.Shutdown(ctx); err != nil {
-			// ошибки закрытия Listener
-			log.Printf("HTTP server Shutdown: %v", err)
-		}
-		// сообщаем основному потоку,
-		// что все сетевые соединения обработаны и закрыты
-		close(idleConnsClosed)
+		exit := make(chan os.Signal, 1)
+		signal.Notify(exit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+		<-exit
+		cancel()
 	}()
-	if err = srv.ListenAndServe(); err != http.ErrServerClosed {
-		// ошибки старта или остановки Listener
-		log.Fatalf("HTTP server ListenAndServe: %v", err)
-	}
-	// ждём завершения процедуры graceful shutdown
-	<-idleConnsClosed
 
-	// получили оповещение о завершении
-	// здесь можно освобождать ресурсы перед выходом,
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() error {
+		return srv.ListenAndServe()
+	}()
+
+	go func() error {
+		<-ctx.Done()
+		wg.Done()
+		return srv.Shutdown(ctx)
+	}()
+
+	// запись метрик в файл
+	if models.StoreInterval > 0 {
+		wg.Add(1)
+		go models.Inter.Saver(ctx, models.FileStorePath, models.StoreInterval, &wg)
+	}
+
+	wg.Wait()
+
 	models.Inter.Close()
 
 	log.Println("Server Shutdown gracefully")
