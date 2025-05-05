@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 
@@ -80,7 +81,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	
+
 	err = basis.RetryMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
@@ -106,6 +107,32 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 // Buncheras - размещает слайс метрик. В т.ч. от Агента.
 // router.HandleFunc("/updates/", handlera.Buncheras).Methods("POST")
 func Buncheras(rwr http.ResponseWriter, req *http.Request) {
+
+	var ipnet *net.IPNet
+	// если есть СИДР - проверяем вхождение в подсеть переданного агентом хеадера X-Real-IP
+	if models.Cidr != "" {
+		// третий параметр - ошибка, проверена при инициализации сервера
+		_, ipnet, _ = net.ParseCIDR(models.Cidr)
+
+		// get X-Real-IP from agent request header
+		agentIP, err := ipFromHeader(req)
+		if err != nil {
+			rwr.WriteHeader(http.StatusForbidden)
+			// зaпись ошибки в формате JSON
+			fmt.Fprintf(rwr, `{"Error":"%v"}`, err) 
+			models.Sugar.Debugf("нет хеадера X-Real-IP %+v\n", err)
+			return
+		}
+		aIP := net.ParseIP(agentIP.String())
+		// если aIP (который X-Real-IP от агента) НЕ входит в сабнет CIDR (ipnet)
+		if !ipnet.Contains(aIP) {
+			rwr.WriteHeader(http.StatusForbidden)
+			fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+			models.Sugar.Debugf("нет хеадера X-Real-IP %+v\n", err)
+			return
+		}
+	}
+	
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
@@ -138,4 +165,28 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 
 	rwr.WriteHeader(http.StatusOK)
 	json.NewEncoder(rwr).Encode(metras) // return marshalled metrics slice
+}
+
+// ipFromHeader получает заголовок X-Real-IP, в котором должен содержаться IP-адрес хоста агента.
+func ipFromHeader(r *http.Request) (net.IP, error) {
+	// смотрим заголовок запроса X-Real-IP
+	ipStr := r.Header.Get("X-Real-IP")
+	// парсим ip
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		// если заголовок X-Real-IP пуст, пробуем X-Forwarded-For
+		// этот заголовок содержит адреса отправителя и промежуточных прокси
+		// в виде 203.0.113.195, 70.41.3.18, 150.172.238.178
+		ips := r.Header.Get("X-Forwarded-For")
+		// разделяем цепочку адресов
+		ipStrs := strings.Split(ips, ",")
+		// интересует только первый
+		ipStr = ipStrs[0]
+		// парсим
+		ip = net.ParseIP(ipStr)
+	}
+	if ip == nil {
+		return nil, fmt.Errorf("failed parse ip from http header")
+	}
+	return ip, nil
 }

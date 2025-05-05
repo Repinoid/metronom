@@ -45,5 +45,5 @@ var (
 	//Key           string = ""              // file name with private key
 	Key        string = "privateKey.pem" // file name with private key
 	PrivateKey string = ""               // private key, содержится в файле с именем в Key
-
+	Cidr       string = ""               //  строковое представление бесклассовой адресации (CIDR)
 )
