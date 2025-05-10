@@ -8,10 +8,11 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"time"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
 
 	"gorono/internal/handlera"
 	"gorono/internal/middlas"
@@ -46,17 +47,13 @@ func main() {
 		_ = models.Inter.LoadMS(models.FileStorePath)
 	}
 
-	if models.StoreInterval > 0 {
-		go models.Inter.Saver(models.FileStorePath, models.StoreInterval)
-	}
-
 	if err := Run(); err != nil {
-		panic(err)
+		log.Printf("Server Shutdown by syscall, ListenAndServe message -  %v\n", err)
 	}
 }
 
-// run. ЗАпуск сервера и хендлеры
-func Run() error {
+// run. Запуск сервера и хендлеры
+func Run() (err error) {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", handlera.PutMetric).Methods("POST")
@@ -68,8 +65,6 @@ func Run() error {
 	router.HandleFunc("/", handlera.BadPost).Methods("POST") // if POST with wrong arguments structure
 	router.HandleFunc("/ping", handlera.DBPinger).Methods("GET")
 
-	router.HandleFunc("/s", seconda).Methods("GET")
-
 	router.Use(middlas.GzipHandleEncoder)
 	router.Use(middlas.GzipHandleDecoder)
 	//router.Use(middlas.NoSugarLogging)	// или NoSugarLogging - или WithLogging ZAP логирование
@@ -78,18 +73,41 @@ func Run() error {
 
 	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
-	return http.ListenAndServe(Host, router)
-}
+	//
+	var srv = http.Server{Addr: Host, Handler: router}
 
-func seconda(rwr http.ResponseWriter, req *http.Request) {
-	//	var DBEndPoint = "postgres://postgres:postgres@go_db:5432/postgres"
+	ctx, cancel := context.WithCancel(context.Background())
 
-	//	baza, err := pgx.Connect(context.Background(), DBEndPoint)
-	baza, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_DSN"))
-	if err != nil {
-		fmt.Fprintf(rwr, "NO pgx.Connect %v\n", err)
-		return
+	go func() {
+		exit := make(chan os.Signal, 1)
+		signal.Notify(exit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+		<-exit
+		cancel()
+	}()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() error {
+		return srv.ListenAndServe()
+	}()
+
+	go func() error {
+		<-ctx.Done()
+		wg.Done()
+		return srv.Shutdown(ctx)
+	}()
+
+	// запись метрик в файл
+	if models.StoreInterval > 0 {
+		wg.Add(1)
+		go models.Inter.Saver(ctx, models.FileStorePath, models.StoreInterval, &wg)
 	}
-	fmt.Fprintf(rwr, "PING OK %v %v\n", baza, time.Now())
 
+	wg.Wait()
+
+	models.Inter.Close()
+
+	log.Println("Server Shutdown gracefully")
+
+	return err
 }

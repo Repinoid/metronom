@@ -4,8 +4,6 @@ package middlas
 import (
 	"bytes"
 	"compress/gzip"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,7 +41,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode // захватываем код статуса
 }
 
-//  WithLogging ZAP log with SUGAR
+// WithLogging ZAP log with SUGAR
 func WithLogging(next http.Handler) http.Handler {
 	loggedFunc := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -66,6 +64,7 @@ func WithLogging(next http.Handler) http.Handler {
 			"size", responseData.size, // получаем перехваченный размер ответа
 		)
 	}
+
 	return http.HandlerFunc(loggedFunc)
 }
 
@@ -151,8 +150,8 @@ func GzipHandleDecoder(next http.Handler) http.Handler {
 // CryptoHandleDecoder middleware раскодировки криптографии
 func CryptoHandleDecoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
-
-		if haInHeader := req.Header.Get("HashSHA256"); haInHeader != "" { // если есть ключ переопределить req
+		// если указан  models.Key файл с private key
+		if models.Key != "" {
 			telo, err := io.ReadAll(req.Body)
 			if err != nil {
 				rwr.WriteHeader(http.StatusBadRequest)
@@ -160,35 +159,27 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 				return
 			}
 			defer req.Body.Close()
-
-			keyB := md5.Sum([]byte(models.Key)) //[]byte(key)
-			ha := privacy.MakeHash(nil, telo, keyB[:])
-			haHex := hex.EncodeToString(ha)
-
-			//			log.Printf("%s from KEY %s\n%s from Header\n", haHex, models.Key, haInHeader)
-
-			if haHex != haInHeader { // несовпадение хешей вычисленного по ключу и переданного в header
-				rwr.WriteHeader(http.StatusBadRequest)
-				fmt.Fprintf(rwr, `{"wrong hash":"%s"}`, haInHeader)
-				return
-			}
-			telo, err = privacy.DecryptB2B(telo, keyB[:])
+			// models.PrivateKey - содержимое файла в models.Key
+			teloDecr, err := privacy.Decrypt(telo, []byte(models.PrivateKey))
 			if err != nil {
 				rwr.WriteHeader(http.StatusBadRequest)
 				fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 				return
 			}
-			newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewBuffer(telo))
+			newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewBuffer(teloDecr))
 			if err != nil {
 				io.WriteString(rwr, err.Error())
 				return
 			}
-			for name := range req.Header { // cкопировать поля header
+			// cкопировать поля header
+			for name := range req.Header {
 				hea := req.Header.Get(name)
 				newReq.Header.Add(name, hea)
 			}
+			// переопределяем request
 			req = newReq
 		}
 		next.ServeHTTP(rwr, req)
+
 	})
 }

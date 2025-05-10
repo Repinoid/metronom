@@ -3,6 +3,7 @@ package models
 
 import (
 	"context"
+	"sync"
 
 	"go.uber.org/zap"
 )
@@ -27,17 +28,22 @@ type Interferon interface {
 	Ping(ctx context.Context, dbepnt string) error
 	LoadMS(fnam string) error
 	SaveMS(fnam string) error
-	Saver(fnam string, storeInterval int) error
+	Saver(ctx context.Context, fnam string, storeInterval int, wg *sync.WaitGroup) error
 	GetName() string
+	Close()
 }
 
-// переменные для логгера и получающие значения из аргументов комендной строки
+// переменные для логгера и получающие значения из аргументов командной строки
 var (
-	Sugar         zap.SugaredLogger
-	Logger        *zap.Logger
-	StoreInterval        = 300             // интервал сохранения метрик в файл, секунд
-	FileStorePath        = "./goshran.txt" // файл для сохранения метрик
-	ReStore              = true            // надо ли сохранять метрики в файл
-	DBEndPoint           = ""              // endpoint базы данных
-	Key           string = ""              // парол
+	Sugar  zap.SugaredLogger
+	Logger *zap.Logger
+	// параметры из флагов командной строки
+	StoreInterval = 300             // интервал сохранения метрик в файл, секунд
+	FileStorePath = "./goshran.txt" // файл для сохранения метрик
+	ReStore       = true            // надо ли сохранять метрики в файл
+	DBEndPoint    = ""              // endpoint базы данных
+	//Key           string = ""              // file name with private key
+	Key        string = "privateKey.pem" // file name with private key
+	PrivateKey string = ""               // private key, содержится в файле с именем в Key
+
 )

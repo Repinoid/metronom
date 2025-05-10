@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -12,14 +13,6 @@ import (
 	"gorono/internal/models"
 )
 
-// Метрика.
-//
-//	 type Metrics struct {
-//		ID    string   `json:"id"`              // имя метрики
-//		MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-//		Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-//		Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-//	}
 type Metrics = models.Metrics
 
 // Структура для базы данных.
@@ -90,8 +83,8 @@ func (dataBase *DBstruct) PutMetric(ctx context.Context, metr *Metrics, gag *[]M
 		order = fmt.Sprintf("INSERT INTO Counter AS args(metricname, value) VALUES ('%[1]s',%[2]d) ", metr.ID, *metr.Delta)
 		order += "ON CONFLICT (metricname) DO UPDATE SET metricname=args.metricname, value=args.value+EXCLUDED.value;"
 		// args.value - старое значение. EXCLUDED.value - новое, переданное для вставки или обновления
-	default:
-		return fmt.Errorf("wrong type %s", metr.MType)
+		// default:
+		// 	return fmt.Errorf("wrong type %s", metr.MType)
 	}
 	_, err := db.Exec(ctx, order)
 	if err != nil {
@@ -152,9 +145,9 @@ func (dataBase *DBstruct) PutAllMetrics(ctx context.Context, gag *Metrics, metra
 			order = fmt.Sprintf("INSERT INTO Counter AS args(metricname, value) VALUES ('%[1]s',%[2]d) ", metr.ID, *metr.Delta)
 			order += "ON CONFLICT (metricname) DO UPDATE SET metricname=args.metricname, value=args.value+EXCLUDED.value;"
 			// args.value - старое значение. EXCLUDED.value - новое, переданное для вставки или обновления
-		default:
-			log.Printf("wrong metric type \"%s\"\n", metr.MType)
-			continue
+			// default:
+			// 	log.Printf("wrong metric type \"%s\"\n", metr.MType)
+			// 	continue
 		}
 		_, err := tx.Exec(ctx, order)
 		if err != nil {
@@ -210,7 +203,8 @@ func (dataBase *DBstruct) SaveMS(fnam string) error {
 }
 
 // для горутины сохранения метрик в файл. epmty function for DB
-func (dataBase *DBstruct) Saver(fnam string, i int) error {
+func (dataBase *DBstruct) Saver(ctx context.Context, fnam string, i int, wg *sync.WaitGroup) error {
+	wg.Done()
 	return nil
 }
 
@@ -222,6 +216,12 @@ func (dataBase *DBstruct) Ping(ctx context.Context, gag string) error {
 		return fmt.Errorf("no ping %w", err)
 	}
 	return nil
+}
+
+// DataBase Close
+func (dataBase *DBstruct) Close() {
+	dataBase.DB.Close()
+	log.Println("DataBase closed gracefully")
 }
 
 // get name. to recognise who is in interface

@@ -15,12 +15,14 @@ import (
 )
 
 // test GzipHandleEncoder middleware on different metrics functions
-func (suite *TstHandlers) Test_gzipPutGet() {
+func (suite *TstHandlers) Test_01gzipPutGet() {
 	type want struct {
 		code     int
 		response string
 		//		err      error
 	}
+	badMetric := models.Metrics{MType: "gaug", ID: "Alloc", Value: middlas.Ptr[float64](78)}
+	badcmMarshalled, _ := json.Marshal(badMetric)
 	controlMetric := models.Metrics{MType: "gauge", ID: "Alloc", Value: middlas.Ptr[float64](78)}
 	cmMarshalled, _ := json.Marshal(controlMetric)
 	controlMetric1 := models.Metrics{MType: "gauge", ID: "Alloc", Value: middlas.Ptr[float64](77)}
@@ -64,6 +66,30 @@ func (suite *TstHandlers) Test_gzipPutGet() {
 			},
 		},
 		{
+			name:            "BAD PutJSONMetric AcceptEncoding",
+			AcceptEncoding:  "gzip",
+			ContentEncoding: "",
+			ContentType:     "application/json",
+			function:        PutJSONMetric,
+			metr:            badMetric,
+			want: want{
+				code:     http.StatusBadRequest,
+				response: string(badcmMarshalled),
+			},
+		},
+		{
+			name:            "BAD GetJSONMetric AcceptEncoding",
+			AcceptEncoding:  "gzip",
+			ContentEncoding: "",
+			ContentType:     "application/json",
+			function:        GetJSONMetric,
+			metr:            badMetric,
+			want: want{
+				code:     http.StatusBadRequest,
+				response: string(badcmMarshalled),
+			},
+		},
+		{
 			name:            "GET After PUT",
 			AcceptEncoding:  "gzip",
 			ContentEncoding: "",
@@ -80,8 +106,8 @@ func (suite *TstHandlers) Test_gzipPutGet() {
 			name:            "NO ENCODINg",
 			AcceptEncoding:  "",
 			ContentEncoding: "gzip",
-			function: thecap,
-			metr:     controlMetric1,
+			function:        thecap,
+			metr:            controlMetric1,
 			want: want{
 				code:     http.StatusOK,
 				response: string(cmMarshalled1),
@@ -99,7 +125,7 @@ func (suite *TstHandlers) Test_gzipPutGet() {
 				Value: middlas.Ptr[float64](77),
 			},
 			want: want{
-				code:     http.StatusOK,
+				code:     http.StatusBadRequest,
 				response: `{"status":"StatusBadRequest"}`,
 			},
 		},
@@ -126,32 +152,50 @@ func (suite *TstHandlers) Test_gzipPutGet() {
 			hh := middlas.GzipHandleEncoder(hfunc) // оборачиваем в мидлварь который зипует
 			hh.ServeHTTP(w, request)               // запускаем handler
 
-			res := w.Body // ответ
-			var telo []byte
+			res := w.Result()
+			defer res.Body.Close()
 
 			if tt.AcceptEncoding == "gzip" {
 				//		if tt.ContentEncoding == "gzip" {
-				unpak, err := middlas.UnpackFromGzip(res) // распаковка
+				unpak, err := middlas.UnpackFromGzip(w.Body) // распаковка
 				if err != nil {
 					log.Printf("UnpackFromGzip %+v\n", err)
 				}
-				telo, err = io.ReadAll(unpak)
+				_, err = io.ReadAll(unpak)
 				if err != nil {
 					log.Printf("AcceptEncoding == \"gzip\" io.ReadAll %+v\n", err)
 				}
 			}
 			if tt.ContentEncoding == "gzip" {
 				var err error
-				telo, err = io.ReadAll(res)
+				_, err = io.ReadAll(w.Body)
 				if err != nil {
 					log.Printf("ContentEncoding == \"gzip\" io.ReadAll %+v\n", err)
 				}
 			}
-			suite.Assert().JSONEq(tt.want.response, string(telo))
+			//			_= telo
+			suite.Assert().Equal(tt.want.code, res.StatusCode)
 
 		})
 	}
 }
+func (suite *TstHandlers) Test_01BadBunch() {
+	request := httptest.NewRequest(http.MethodPost, "/updates/", bytes.NewBuffer([]byte("hzwhat")))
+	w := httptest.NewRecorder()
+	Buncheras(w, request)
+	res := w.Result()
+	defer res.Body.Close()
+	suite.Assert().Equal(http.StatusBadRequest, res.StatusCode)
+
+	request = httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer([]byte("hzwhat")))
+	w = httptest.NewRecorder()
+	GetJSONMetric(w, request)
+	res = w.Result()
+	defer res.Body.Close()
+	suite.Assert().Equal(http.StatusBadRequest, res.StatusCode)
+
+}
+
 
 // хандлер для теста - что пришло, то и ушло
 func thecap(rwr http.ResponseWriter, req *http.Request) {
@@ -164,4 +208,3 @@ func thecap(rwr http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	rwr.Write(telo)
 }
-

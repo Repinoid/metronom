@@ -2,8 +2,7 @@
 package handlera
 
 import (
-	"crypto/md5"
-	"encoding/hex"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,7 +12,6 @@ import (
 	"gorono/internal/basis"
 	"gorono/internal/memos"
 	"gorono/internal/models"
-	"gorono/internal/privacy"
 )
 
 // GetJSONMetric - возвращает метрику по запросу методом POST.
@@ -38,6 +36,7 @@ func GetJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		models.Sugar.Debugf("json.Unmarshal %+v err %+v\n", metr, err)
 		return
 	}
+
 	err = basis.RetryMetricWrapper(models.Inter.GetMetric)(req.Context(), &metr, nil)
 	if err == nil { // if ништяк
 		rwr.WriteHeader(http.StatusOK)
@@ -81,6 +80,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
+	
 	err = basis.RetryMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
@@ -115,7 +115,11 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
-	metras, err := memos.MetrixUnMarhal(telo) // own json decoder
+	buf := bytes.NewBuffer(telo)
+	metras := []models.Metrics{}
+	err = json.NewDecoder(buf).Decode(&metras)
+
+	//metras, err := memos.MetrixUnMarhal(telo) // own json decoder
 
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
@@ -124,28 +128,12 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = basis.RetryMetricWrapper(models.Inter.PutAllMetrics)(req.Context(), nil, metras)
+	err = basis.RetryMetricWrapper(models.Inter.PutAllMetrics)(req.Context(), nil, &metras)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
 		models.Sugar.Debugf(" Put   err %+v\n", err)
 		return
-	}
-
-	// models.Key задаётся переменной откружения или аргументом -k
-	if models.Key != "" {
-		//хеш-функция — MD5 из пакета https://pkg.go.dev/crypto/md5. Bозвращает хеш длиной 16 байт.
-		keyB16 := md5.Sum([]byte(models.Key))
-
-		keyB := keyB16[:]                            // keyB16 [16]byte => keyB []byte
-		coded, err := privacy.EncryptB2B(telo, keyB) // кодируем telo => coded
-		if err != nil {
-			models.Sugar.Debugf("encrypt   err %+v\n", err)
-			return
-		}
-		ha := privacy.MakeHash(nil, coded, keyB)
-		haHex := hex.EncodeToString(ha)       // EncodeToString returns the hexadecimal encoding of src.
-		rwr.Header().Add("HashSHA256", haHex) // добавляем в заголовок хэш
 	}
 
 	rwr.WriteHeader(http.StatusOK)

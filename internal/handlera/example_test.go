@@ -58,6 +58,28 @@ func ExamplePutMetric_badInt() {
 	// {"status":"StatusBadRequest"}
 
 }
+func ExamplePutMetric_badFloat() {
+
+	memStor := memos.InitMemoryStorage()
+	models.Inter = memStor
+
+	val := "2026.030aa8"
+	urlVarsPut := map[string]string{"metricType": "gauge", "metricName": "flobad", "metricValue": val}
+
+	request := httptest.NewRequest(http.MethodGet, "/pofiguchto", nil)
+	request = mux.SetURLVars(request, urlVarsPut)
+	w := httptest.NewRecorder()
+	PutMetric(w, request)
+	res := w.Result()
+	defer res.Body.Close()
+	bb := w.Body.String()
+
+	fmt.Println(bb)
+
+	// Output:
+	// {"status":"StatusBadRequest"}
+
+}
 
 func ExampleGetMetric() {
 
@@ -132,7 +154,9 @@ func ExampleGetJSONMetric() {
 	}
 	metr := models.Metrics{}
 	err = json.Unmarshal([]byte(telo), &metr)
-
+	if err != nil {
+		return
+	}
 	fmt.Println(metr.MType, metr.ID, *metr.Value)
 
 	// Output:

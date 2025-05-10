@@ -2,13 +2,16 @@
 package main
 
 import (
-	"crypto/md5"
-	"encoding/hex"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -23,10 +26,12 @@ var host = "localhost:8080"
 
 var (
 	reportInterval = 10
-	pollInterval = 2
-	key          = ""
-	rateLimit    = 4
-	cunt         int64
+	pollInterval   = 2
+	//	cryptoKeyFile  = ""
+	cryptoKeyFile = "cert.pem"
+	cryptoKey     = []byte("")
+	rateLimit     = 3
+	cunt          int64
 )
 
 // Глобальные переменные для флага компилляции.
@@ -39,7 +44,7 @@ var (
 
 func main() {
 	if err := initAgent(); err != nil {
-		log.Fatal("INTERVALS error ", err)
+		log.Fatal(err)
 		return
 	}
 
@@ -54,104 +59,149 @@ func main() {
 
 func run() error {
 
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		exit := make(chan os.Signal, 1)
+		signal.Notify(exit, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+		<-exit
+		cancel()
+	}()
+
+	var wg sync.WaitGroup
+
 	const chanCap = 4
 
 	metroBarn := make(chan []models.Metrics, chanCap)
-	go metrixIN(metroBarn)
 
-	fenix := make(chan struct{})
+	wg.Add(1)
+	go metrixIN(ctx, metroBarn, &wg)
+
 	for w := 1; w <= rateLimit; w++ {
-		go bolda(metroBarn, fenix)
+		wg.Add(1)
+		log.Println("Балда запущена")
+		go bolda(ctx, metroBarn, &wg)
 	}
-	for {
-		fenix <- struct{}{}        // блокируем канал пока балда не прочитает из него при своём завершении по ошибке
-		go bolda(metroBarn, fenix) // нанимаем нового
-	}
+
+	wg.Wait()
+	close(metroBarn)
+	log.Println("Agent Shutdown gracefully")
+	return nil
 }
 
 // получает банчи метрик и складывает в barn
-func metrixIN(metroBarn chan<- []models.Metrics) {
+// func metrixIN(ctx context.Context, metroBarn chan<- []models.Metrics, wg *sync.WaitGroup, sigint chan os.Signal) {
+func metrixIN(ctx context.Context, metroBarn chan<- []models.Metrics, wg *sync.WaitGroup) {
+	defer wg.Done()
 	memStorage := []models.Metrics{}
 	tickerPoll := time.NewTicker(time.Duration(pollInterval) * time.Second)
 	tickerReport := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for {
 		select {
+		case <-ctx.Done():
+			log.Println("Горутина metrixIN остановлена")
+			return
+		// по тикеру запрашиваем метрикис рантайма
 		case <-tickerPoll.C:
 			memStorage = *memos.GetMetrixFromOS()
 			addMetrix := *memos.GetMoreMetrix()
 			memStorage = append(memStorage, addMetrix...)
 			atomic.AddInt64(&cunt, 1) //			cunt++
 
+			// search for PollCount metric
 			for ind, metr := range memStorage {
-				if metr.ID == "PollCount" && metr.MType == "counter" { // search for PollCount metric
+				if metr.ID == "PollCount" && metr.MType == "counter" {
 					cu := atomic.LoadInt64(&cunt)
 					memStorage[ind].Delta = &cu // memStorage[ind].Delta = cunt
 					break
 				}
 			}
+		// засылаем метрики в канал
 		case <-tickerReport.C:
 			metroBarn <- memStorage
 		}
 	}
 }
 
-// работник отсылает банчи метрик на сервер, феникс - канал для подачи сигнала о завершении по ошибке
-func bolda(metroBarn <-chan []models.Metrics, fenix <-chan struct{}) {
+// работник отсылает банчи метрик на сервер,
+func bolda(ctx context.Context, metroBarn <-chan []models.Metrics, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var bunch []models.Metrics
 	for {
-		bunch := <-metroBarn
-		marshalledBunch, err := json.Marshal(bunch)
-		if err != nil {
-			<-fenix // в случае ошибки читаем из феникса, разблокируя канал и выходим
-			return
-		}
-		var haHex string
-		if key != "" {
-			keyB := md5.Sum([]byte(key))
+		select {
+		case <-ctx.Done():
+			log.Println("Горутина bolda остановлена")
 
-			coded, err := privacy.EncryptB2B(marshalledBunch, keyB[:])
-			if err != nil {
-				<-fenix
-				return
+			// search for PollCount metric, if not 0 - sendMetrics напоследок
+			for ind, metr := range bunch {
+				if metr.ID == "PollCount" && metr.MType == "counter" {
+					if *bunch[ind].Delta > 0 {
+						sendMetrics(bunch)
+					}
+					break // нашлось
+				}
 			}
-			ha := privacy.MakeHash(nil, coded, keyB[:])
-			haHex = hex.EncodeToString(ha)
-			marshalledBunch = coded
-		}
-		compressedBunch, err := middlas.Pack2gzip(marshalledBunch)
-		if err != nil {
-			<-fenix
 			return
+		case bunch = <-metroBarn:
+			err := sendMetrics(bunch)
+			if err != nil {
+				log.Println(err)
+			}
 		}
-
-		httpc := resty.New() //
-		httpc.SetBaseURL("http://" + host)
-
-		httpc.SetRetryCount(3)
-		httpc.SetRetryWaitTime(1 * time.Second)    // начальное время повтора
-		httpc.SetRetryMaxWaitTime(9 * time.Second) // 1+3+5
-		httpc.SetRetryAfter(func(client *resty.Client, resp *resty.Response) (time.Duration, error) {
-			rwt := client.RetryWaitTime
-			client.SetRetryWaitTime(rwt + 2*time.Second) //	увеличение времени ожидания на 2 сек
-			return client.RetryWaitTime, nil
-		})
-
-		req := httpc.R().
-			SetHeader("Content-Encoding", "gzip"). // сжаtо
-			SetBody(compressedBunch).
-			SetHeader("Accept-Encoding", "gzip")
-
-		if key != "" {
-			req.Header.Add("HashSHA256", haHex)
-		}
-
-		resp, _ := req.
-			SetDoNotParseResponse(false).
-			Post("/updates/") // slash on the tile
-		if resp.StatusCode() == http.StatusOK { // при успешной отправке метрик обнуляем cчётчик
-			atomic.StoreInt64(&cunt, 0) //	cunt = 0
-
-		}
-
-		log.Printf("AGENT responce from server %+v\n", resp.StatusCode())
 	}
+}
+
+// sendMetrics посылает слайс метрик на сервер
+func sendMetrics(bunch []models.Metrics) (err error) {
+
+	marshalledBunch, err := json.Marshal(bunch)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if cryptoKeyFile != "" {
+
+		coded, err := privacy.Encrypt(marshalledBunch, cryptoKey)
+
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		marshalledBunch = coded
+	}
+	compressedBunch, err := middlas.Pack2gzip(marshalledBunch)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	httpc := resty.New() //
+	httpc.SetBaseURL("http://" + host)
+
+	httpc.SetRetryCount(3)
+	httpc.SetRetryWaitTime(1 * time.Second)    // начальное время повтора
+	httpc.SetRetryMaxWaitTime(9 * time.Second) // 1+3+5
+	httpc.SetRetryAfter(func(client *resty.Client, resp *resty.Response) (time.Duration, error) {
+		rwt := client.RetryWaitTime
+		client.SetRetryWaitTime(rwt + 2*time.Second) //	увеличение времени ожидания на 2 сек
+		return client.RetryWaitTime, nil
+	})
+
+	req := httpc.R().
+		SetHeader("Content-Encoding", "gzip"). // сжаtо
+		SetBody(compressedBunch).
+		SetHeader("Accept-Encoding", "gzip")
+
+	resp, _ := req.
+		SetDoNotParseResponse(false).
+		Post("/updates/") // slash on the tile
+	if resp.StatusCode() == http.StatusOK { // при успешной отправке метрик обнуляем cчётчик
+		atomic.StoreInt64(&cunt, 0) //	cunt = 0
+
+	}
+
+	log.Printf("AGENT responce from server %+v\n", resp.StatusCode())
+
+	return nil
 }

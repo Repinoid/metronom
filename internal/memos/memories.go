@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -47,8 +48,6 @@ func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *models
 		memorial.Gaugemetr[metr.ID] = models.Gauge(*metr.Value)
 	case "counter":
 		memorial.Countmetr[metr.ID] += models.Counter(*metr.Delta)
-	default:
-		return fmt.Errorf("wrong type %s", metr.MType)
 	}
 	return nil
 }
@@ -57,7 +56,6 @@ func (memorial *MemoryStorageStruct) PutMetric(ctx context.Context, metr *models
 func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *models.Metrics, gag *[]models.Metrics) error {
 	memorial.Mutter.RLock() // <---- MUTEX
 	defer memorial.Mutter.RUnlock()
-	//	metrix := models.Metrics{ID: metr.ID, MType: metr.MType} // new pure models.Metrics to return, nil Delta&Value ptrs
 	switch metr.MType {
 	case "gauge":
 		if val, ok := memorial.Gaugemetr[metr.ID]; ok {
@@ -72,7 +70,6 @@ func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *models
 			metr.Delta = &out
 			break
 		}
-		return fmt.Errorf("unknown metric %+v", metr)
 	default:
 		return fmt.Errorf("wrong type %s", metr.MType)
 	}
@@ -217,14 +214,28 @@ func (memorial *MemoryStorageStruct) SaveMS(fnam string) error {
 }
 
 // для горутины - сохранение метрик через storeInterval секунд
-func (memorial *MemoryStorageStruct) Saver(fnam string, storeInterval int) error {
+func (memorial *MemoryStorageStruct) Saver(ctx context.Context, fnam string, storeInterval int, wg *sync.WaitGroup) error {
+	defer wg.Done()
+	ticker := time.NewTicker(time.Duration(storeInterval) * time.Second)
+
 	for {
-		time.Sleep(time.Duration(storeInterval) * time.Second)
-		err := memorial.SaveMS(fnam)
-		if err != nil {
-			return fmt.Errorf("save err %v", err)
+		select {
+
+		case <-ctx.Done():
+			log.Println("Запись метрик в файл остановлена")
+			return errors.New("Saver остановлен по сигналу")
+
+		case <-ticker.C:
+			err := memorial.SaveMS(fnam)
+			if err != nil {
+				return fmt.Errorf("save err %v", err)
+			}
 		}
 	}
+}
+
+func (memorial *MemoryStorageStruct) Close() {
+	log.Println("MS Closed")
 }
 
 // check if Metric has correct fields
