@@ -1,154 +1,207 @@
+// агент (HTTP-клиент) для сбора рантайм-метрик и их последующей отправки на сервер по протоколу HTTP.
 package main
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand/v2"
 	"net/http"
-	"runtime"
-	"strconv"
+	"os"
+	"os/signal"
 	"sync"
+	"sync/atomic"
+	"syscall"
 	"time"
+
+	"github.com/go-resty/resty/v2"
+
+	"gorono/internal/memos"
+	"gorono/internal/middlas"
+	"gorono/internal/models"
+	"gorono/internal/privacy"
 )
 
-type gauge float64
-type counter int64
-type MemStorage struct {
-	gau    map[string]gauge
-	count  map[string]counter
-	mutter sync.RWMutex
-}
-type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
-
-// var memStor *MemStorage
 var host = "localhost:8080"
-var reportInterval = 10
-var pollInterval = 2
 
-func getMetrix(memStor *MemStorage) error {
-	var mS runtime.MemStats
-	runtime.ReadMemStats(&mS)
-	memStor.mutter.Lock() // MUTEXed
-	defer memStor.mutter.Unlock()
+var (
+	reportInterval = 10
+	pollInterval   = 2
+	//	cryptoKeyFile  = ""
+	cryptoKeyFile = "cert.pem"
+	cryptoKey     = []byte("")
+	rateLimit     = 3
+	cunt          int64
+)
 
-	//	memStor.PollCount++
-	memStor.gau = map[string]gauge{
-		"Alloc":         gauge(mS.Alloc),
-		"BuckHashSys":   gauge(mS.BuckHashSys),
-		"Frees":         gauge(mS.Frees),
-		"GCCPUFraction": gauge(mS.GCCPUFraction),
-		"GCSys":         gauge(mS.GCSys),
-		"HeapAlloc":     gauge(mS.HeapAlloc),
-		"HeapIdle":      gauge(mS.HeapIdle),
-		"HeapInuse":     gauge(mS.HeapInuse),
-		"HeapObjects":   gauge(mS.HeapObjects),
-		"HeapReleased":  gauge(mS.HeapReleased),
-		"HeapSys":       gauge(mS.HeapSys),
-		"LastGC":        gauge(mS.LastGC),
-		"Lookups":       gauge(mS.Lookups),
-		"MCacheInuse":   gauge(mS.MCacheInuse),
-		"MCacheSys":     gauge(mS.MCacheSys),
-		"MSpanInuse":    gauge(mS.MSpanInuse),
-		"MSpanSys":      gauge(mS.MSpanSys),
-		"Mallocs":       gauge(mS.Mallocs),
-		"NextGC":        gauge(mS.NextGC),
-		"NumForcedGC":   gauge(mS.NumForcedGC),
-		"NumGC":         gauge(mS.NumGC),
-		"OtherSys":      gauge(mS.OtherSys),
-		"PauseTotalNs":  gauge(mS.PauseTotalNs),
-		"StackInuse":    gauge(mS.StackInuse),
-		"StackSys":      gauge(mS.StackSys),
-		"Sys":           gauge(mS.Sys),
-		"TotalAlloc":    gauge(mS.TotalAlloc),
-		"RandomValue":   gauge(rand.Float64()), // self-defined
-	}
-	memStor.count = map[string]counter{
-		"PollCount": counter(0), // self-defined
-	}
-	return nil
-}
-func postMetric(metricType, metricName, metricValue string) error {
-	var metr Metrics
-	switch metricType {
-	case "counter":
-		val, err := strconv.ParseInt(metricValue, 10, 64)
-		if err != nil {
-			return fmt.Errorf("wrong counter value %w", err)
-		}
-		metr = Metrics{
-			ID:    metricName,
-			MType: metricType,
-			Delta: &val,
-		}
-	case "gauge":
-		val, err := strconv.ParseFloat(metricValue, 64)
-		if err != nil {
-			return fmt.Errorf("wrong gauge value %w", err)
-		}
-		metr = Metrics{
-			ID:    metricName,
-			MType: metricType,
-			Value: &val,
-		}
-	default:
-		return fmt.Errorf("wrong metric type")
-	}
-	march, err := json.Marshal(metr)
-	if err != nil {
-		return fmt.Errorf("could not marshal metr %w", err)
-	}
-	resp, err := http.Post("http://"+host+"/update/", "application/json", bytes.NewBuffer(march))
-	if err != nil {
-		return fmt.Errorf("could not post %w", err)
-	}
-	defer resp.Body.Close()
-
-	return nil
-}
+// Глобальные переменные для флага компилляции.
+// Форма запуска go run -ldflags "-X main.buildVersion=v1.0.1 -X 'main.buildDate=$(date +'%Y/%m/%d')' -X main.buildCommit=comitta" main.go
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
 
 func main() {
-	if err := foa4Agent(); err != nil {
-		log.Fatal("INTERVAL error ", err)
+	if err := initAgent(); err != nil {
+		log.Fatal(err)
 		return
 	}
+
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
 	if err := run(); err != nil {
 		panic(err)
 	}
 }
 
 func run() error {
-	memStor := new(MemStorage)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		exit := make(chan os.Signal, 1)
+		signal.Notify(exit, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+		<-exit
+		cancel()
+	}()
+
+	var wg sync.WaitGroup
+
+	const chanCap = 4
+
+	metroBarn := make(chan []models.Metrics, chanCap)
+
+	wg.Add(1)
+	go metrixIN(ctx, metroBarn, &wg)
+
+	for w := 1; w <= rateLimit; w++ {
+		wg.Add(1)
+		log.Println("Балда запущена")
+		go bolda(ctx, metroBarn, &wg)
+	}
+
+	wg.Wait()
+	close(metroBarn)
+	log.Println("Agent Shutdown gracefully")
+	return nil
+}
+
+// получает банчи метрик и складывает в barn
+// func metrixIN(ctx context.Context, metroBarn chan<- []models.Metrics, wg *sync.WaitGroup, sigint chan os.Signal) {
+func metrixIN(ctx context.Context, metroBarn chan<- []models.Metrics, wg *sync.WaitGroup) {
+	defer wg.Done()
+	memStorage := []models.Metrics{}
+	tickerPoll := time.NewTicker(time.Duration(pollInterval) * time.Second)
+	tickerReport := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for {
-		cunt := 0
-		for i := 0; i < reportInterval/pollInterval; i++ {
-			err := getMetrix(memStor)
-			if err != nil {
-				log.Println(err, "getMetrix")
-			} else {
-				cunt++
+		select {
+		case <-ctx.Done():
+			log.Println("Горутина metrixIN остановлена")
+			return
+		// по тикеру запрашиваем метрикис рантайма
+		case <-tickerPoll.C:
+			memStorage = *memos.GetMetrixFromOS()
+			addMetrix := *memos.GetMoreMetrix()
+			memStorage = append(memStorage, addMetrix...)
+			atomic.AddInt64(&cunt, 1) //			cunt++
+
+			// search for PollCount metric
+			for ind, metr := range memStorage {
+				if metr.ID == "PollCount" && metr.MType == "counter" {
+					cu := atomic.LoadInt64(&cunt)
+					memStorage[ind].Delta = &cu // memStorage[ind].Delta = cunt
+					break
+				}
 			}
-			time.Sleep(time.Duration(pollInterval) * time.Second)
+		// засылаем метрики в канал
+		case <-tickerReport.C:
+			metroBarn <- memStorage
 		}
-		for name, value := range memStor.gau {
-			valStr := strconv.FormatFloat(float64(value), 'f', 4, 64)
-			err := postMetric("gauge", name, valStr)
-			if err != nil {
-				log.Println(err, "gauge", name, valStr)
+	}
+}
+
+// работник отсылает банчи метрик на сервер,
+func bolda(ctx context.Context, metroBarn <-chan []models.Metrics, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var bunch []models.Metrics
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Горутина bolda остановлена")
+
+			// search for PollCount metric, if not 0 - sendMetrics напоследок
+			for ind, metr := range bunch {
+				if metr.ID == "PollCount" && metr.MType == "counter" {
+					if *bunch[ind].Delta > 0 {
+						sendMetrics(bunch)
+					}
+					break // нашлось
+				}
 			}
-		}
-		for name := range memStor.count {
-			valStr := strconv.FormatInt(int64(cunt), 10)
-			err := postMetric("counter", name, valStr)
+			return
+		case bunch = <-metroBarn:
+			err := sendMetrics(bunch)
 			if err != nil {
-				log.Println(err, "counter", name, valStr)
+				log.Println(err)
 			}
 		}
 	}
+}
+
+// sendMetrics посылает слайс метрик на сервер
+func sendMetrics(bunch []models.Metrics) (err error) {
+
+	marshalledBunch, err := json.Marshal(bunch)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if cryptoKeyFile != "" {
+
+		coded, err := privacy.Encrypt(marshalledBunch, cryptoKey)
+
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		marshalledBunch = coded
+	}
+	compressedBunch, err := middlas.Pack2gzip(marshalledBunch)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	httpc := resty.New() //
+	httpc.SetBaseURL("http://" + host)
+
+	httpc.SetRetryCount(3)
+	httpc.SetRetryWaitTime(1 * time.Second)    // начальное время повтора
+	httpc.SetRetryMaxWaitTime(9 * time.Second) // 1+3+5
+	httpc.SetRetryAfter(func(client *resty.Client, resp *resty.Response) (time.Duration, error) {
+		rwt := client.RetryWaitTime
+		client.SetRetryWaitTime(rwt + 2*time.Second) //	увеличение времени ожидания на 2 сек
+		return client.RetryWaitTime, nil
+	})
+
+	req := httpc.R().
+		SetHeader("Content-Encoding", "gzip"). // сжаtо
+		SetBody(compressedBunch).
+		SetHeader("Accept-Encoding", "gzip")
+
+	resp, _ := req.
+		SetDoNotParseResponse(false).
+		Post("/updates/") // slash on the tile
+	if resp.StatusCode() == http.StatusOK { // при успешной отправке метрик обнуляем cчётчик
+		atomic.StoreInt64(&cunt, 0) //	cunt = 0
+
+	}
+
+	log.Printf("AGENT responce from server %+v\n", resp.StatusCode())
+
+	return nil
 }

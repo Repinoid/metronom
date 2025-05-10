@@ -7,10 +7,14 @@ import (
 	"strconv"
 )
 
-func foa4Agent() error {
+func initLoader() error {
 	enva, exists := os.LookupEnv("ADDRESS")
 	if exists {
 		host = enva
+	}
+	enva, exists = os.LookupEnv("KEY")
+	if exists {
+		key = enva
 	}
 	enva, exists = os.LookupEnv("REPORT_INTERVAL")
 	if exists {
@@ -20,30 +24,33 @@ func foa4Agent() error {
 			return fmt.Errorf("REPORT_INTERVAL error value %s\t error %w", enva, err)
 		}
 	}
-	enva, exists = os.LookupEnv("POLL_INTERVAL")
+	enva, exists = os.LookupEnv("RATE_LIMIT")
 	if exists {
 		var err error
-		pollInterval, err = strconv.Atoi(enva)
+		rateLimit, err = strconv.Atoi(enva)
 		if err != nil {
-			return fmt.Errorf("POLL_INTERVAL error value %s\t error %w", enva, err)
+			return fmt.Errorf("RATE_LIMIT error value %s\t error %w", enva, err)
 		}
-		return nil
 	}
 
-	var hostFlag string
+	var hostFlag, keyFlag string
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
+	flag.StringVar(&keyFlag, "k", key, "int")
 	reportIntervalFlag := flag.Int("r", reportInterval, "reportInterval")
-	pollIntervalFlag := flag.Int("p", pollInterval, "pollIntervalFlag")
+	rateLimitFlag := flag.Int("l", rateLimit, "pollIntervalFlag")
 	flag.Parse()
 
 	if _, exists := os.LookupEnv("ADDRESS"); !exists {
 		host = hostFlag
 	}
+	if _, exists := os.LookupEnv("KEY"); !exists {
+		key = keyFlag
+	}
 	if _, exists := os.LookupEnv("REPORT_INTERVAL"); !exists {
 		reportInterval = *reportIntervalFlag
 	}
-	if _, exists := os.LookupEnv("POLL_INTERVAL"); !exists {
-		pollInterval = *pollIntervalFlag
+	if _, exists := os.LookupEnv("RATE_LIMIT"); !exists {
+		rateLimit = *rateLimitFlag
 	}
 	return nil
 }
