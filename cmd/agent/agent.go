@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -191,7 +192,8 @@ func sendMetrics(bunch []models.Metrics) (err error) {
 	req := httpc.R().
 		SetHeader("Content-Encoding", "gzip"). // сжаtо
 		SetBody(compressedBunch).
-		SetHeader("Accept-Encoding", "gzip")
+		SetHeader("Accept-Encoding", "gzip").
+		SetHeader("X-Real-IP", GetLocalIP())
 
 	resp, _ := req.
 		SetDoNotParseResponse(false).
@@ -204,4 +206,20 @@ func sendMetrics(bunch []models.Metrics) (err error) {
 	log.Printf("AGENT responce from server %+v\n", resp.StatusCode())
 
 	return nil
+}
+
+func GetLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return ""
 }

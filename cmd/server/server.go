@@ -87,14 +87,24 @@ func Run() (err error) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go func() error {
-		return srv.ListenAndServe()
+	go func() {
+		// ListenAndServe always returns a non-nil error.
+		// After Server.Shutdown or Server.Close, the returned error is ErrServerClosed. иначе фатал
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
 	}()
 
-	go func() error {
+	go func() {
 		<-ctx.Done()
-		wg.Done()
-		return srv.Shutdown(ctx)
+		defer wg.Done()
+		// Attempt graceful shutdown
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("Graceful shutdown failed: %v", err)
+			if err := srv.Close(); err != nil {
+				log.Fatalf("Forced shutdown failed: %v", err)
+			}
+		}
 	}()
 
 	// запись метрик в файл
