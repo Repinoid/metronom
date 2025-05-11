@@ -15,18 +15,20 @@ type flagAgent struct {
 	ReportInterval string `json:"report_interval"` // аналог переменной окружения STORE_INTERVAL или флага -i
 	PollInterval   string `json:"poll_interval"`   // аналог переменной окружения STORE_INTERVAL или флага -i
 	CryptoKey      string `json:"crypto_key"`      // аналог переменной окружения CRYPTO_KEY или флага -crypto-key
+	GrpcPort       string `json:"grpc_port"`       // gRPC, port
 }
 
 // initAgent() - инициализация параметров агента из аргументов командной строки
 func initAgent() error {
 	var err error
 
-	var hostFlag, keyFlag, configFlag string
+	var hostFlag, keyFlag, configFlag, grpcFlag string
 
 	flag.StringVar(&configFlag, "c", "", "путь до файла с JSON конфигурации")
 	flag.StringVar(&configFlag, "config", "", "путь до файла с JSON конфигурации") // -c = -config
 	flag.StringVar(&hostFlag, "a", host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&keyFlag, "crypto-key", "", "путь до файла с публичным ключом")
+	flag.StringVar(&grpcFlag, "g", gPort, "-g= GRPC port")
 	reportIntervalFlag := flag.Int("r", reportInterval, "reportInterval")
 	pollIntervalFlag := flag.Int("p", pollInterval, "pollIntervalFlag")
 	rateLimitFlag := flag.Int("l", rateLimit, "pollIntervalFlag")
@@ -63,6 +65,9 @@ func initAgent() error {
 	}
 	if keyFlag != "" {
 		cryptoKeyFile = keyFlag
+	}
+	if grpcFlag != "" {
+		gPort = grpcFlag
 	}
 	if *reportIntervalFlag != 0 {
 		reportInterval = *reportIntervalFlag

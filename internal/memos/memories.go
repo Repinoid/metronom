@@ -235,7 +235,7 @@ func (memorial *MemoryStorageStruct) Saver(ctx context.Context, fnam string, sto
 }
 
 func (memorial *MemoryStorageStruct) Close() {
-	log.Println("MS Closed")
+	log.Println("Memory Storage Closed")
 }
 
 // check if Metric has correct fields

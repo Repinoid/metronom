@@ -15,10 +15,10 @@ t*.bat
 *.out
 
 # Binaries
-cmd/agent/main
-cmd/agent/agent
-cmd/server/main
-cmd/server/server
+#cmd/agent/main
+#cmd/agent/agent
+#cmd/server/main
+#cmd/server/server
 
 # Dependency directories (remove the comment below to include it)
 vendor/
