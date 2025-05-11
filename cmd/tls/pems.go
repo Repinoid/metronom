@@ -1,3 +1,5 @@
+// https://shaneutt.com/blog/golang-ca-and-signed-cert-go/
+
 package main
 
 import (
@@ -9,7 +11,6 @@ import (
 	"encoding/pem"
 	"log"
 	"math/big"
-	"net"
 	"os"
 	"time"
 )
@@ -25,7 +26,8 @@ func main() {
 			Country:      []string{"RU"},
 		},
 		// разрешаем использование сертификата для 127.0.0.1 и ::1
-		IPAddresses: []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
+		//IPAddresses: []net.IP{} ,
+		//IPAddresses: []net.IP{net.IPv4(x, x, x, x), net.IPv6loopback},
 		// сертификат верен, начиная со времени создания
 		NotBefore: time.Now(),
 		// время жизни сертификата — 10 лет
@@ -34,7 +36,7 @@ func main() {
 		// устанавливаем использование ключа для цифровой подписи,
 		// а также клиентской и серверной авторизации
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-		KeyUsage:    x509.KeyUsageDigitalSignature,
+		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 	}
 
 	// создаём новый приватный RSA-ключ длиной 4096 бит
@@ -55,7 +57,7 @@ func main() {
 	// используется для хранения и обмена криптографическими ключами
 	var certPEM bytes.Buffer
 	pem.Encode(&certPEM, &pem.Block{
-		Type: "PUBLIC KEY",
+		Type: "CERTIFICATE",
 		//		Type:  "CERTIFICATE",
 		Bytes: certBytes,
 	})
@@ -66,11 +68,11 @@ func main() {
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	})
 
-	err = os.WriteFile("../agent/cert.pem", certPEM.Bytes(), 0666)
+	err = os.WriteFile("cert.pem", certPEM.Bytes(), 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = os.WriteFile("../server/privateKey.pem", privateKeyPEM.Bytes(), 0666)
+	err = os.WriteFile("key.pem", privateKeyPEM.Bytes(), 0666)
 	if err != nil {
 		log.Fatal(err)
 	}

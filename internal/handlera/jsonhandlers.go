@@ -128,7 +128,7 @@ func Buncheras(rwr http.ResponseWriter, req *http.Request) {
 		if !ipnet.Contains(aIP) {
 			rwr.WriteHeader(http.StatusForbidden)
 			fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
-			models.Sugar.Debugf("нет хеадера X-Real-IP %+v\n", err)
+			models.Sugar.Debugf("НЕ входит в сабнет CIDR (ipnet) %+v\n", err)
 			return
 		}
 	}

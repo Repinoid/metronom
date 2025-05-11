@@ -26,6 +26,8 @@ type flagServer struct {
 	DatabaseDsn   string `json:"database_dsn"`   // аналог переменной окружения DATABASE_DSN или флага -d
 	CryptoKey     string `json:"crypto_key"`     // аналог переменной окружения CRYPTO_KEY или флага -crypto-key
 	TrustedSubnet string `json:"trusted_subnet"` // строковое представление бесклассовой адресации (CIDR)
+	// установлено дефолтное значение ":3200"
+	GrpcPort string `json:"grpc_port"` // gRPC server, port
 }
 
 // initServer () - инициализация параметров сервера и endpoint базы данных из аргументов командной строки
@@ -47,6 +49,7 @@ func InitServer() error {
 	var keyFlag string
 	var configFlag string
 	var cidrFlag string
+	var grpcFlag string
 
 	flag.StringVar(&configFlag, "c", "", "путь до файла с JSON конфигурации")      // "" - по умолчанию пусто
 	flag.StringVar(&configFlag, "config", "", "путь до файла с JSON конфигурации") // -c = -config
@@ -55,6 +58,7 @@ func InitServer() error {
 	flag.StringVar(&cidrFlag, "t", models.Cidr, "CIDR")
 	flag.StringVar(&hostFlag, "a", Host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", models.FileStorePath, "-f= file to save memory storage")
+	flag.StringVar(&grpcFlag, "g", models.Gport, "-g= GRPC port")
 	storeIntervalFlag := flag.Int("i", models.StoreInterval, "storeInterval")
 	restoreFlag := flag.Bool("r", models.ReStore, "is restore mode on")
 
@@ -107,6 +111,9 @@ func InitServer() error {
 	}
 	if cidrFlag != "" {
 		models.Cidr = cidrFlag
+	}
+	if grpcFlag != "" {
+		models.Gport = grpcFlag
 	}
 	// параметры из переменных окружения
 	hoster, exists := os.LookupEnv("ADDRESS")
