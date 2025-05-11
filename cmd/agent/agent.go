@@ -62,7 +62,7 @@ func run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if gPort == "" {
-		sendMetrics = sendMetricsByHttp
+		sendMetrics = sendMetricsByHTTP
 	} else {
 		sendMetrics = sendMetricsByGrpc
 	}

@@ -26,7 +26,7 @@ import (
 )
 
 // sendMetricsByHttp посылает слайс метрик на сервер by HTTP
-func sendMetricsByHttp(ctx context.Context, bunch []models.Metrics) (err error) {
+func sendMetricsByHTTP(ctx context.Context, bunch []models.Metrics) (err error) {
 
 	marshalledBunch, err := json.Marshal(bunch)
 	if err != nil {
