@@ -34,11 +34,11 @@ func TestAssym(t *testing.T) {
 	require.NoError(t, err)
 
 	// Public Key File
-	pkb, err := os.ReadFile("../../cmd/agent/cert.pem")
+	pkb, err := os.ReadFile("../../cmd/tls/cert.pem")
 	require.NoError(t, err)
 
 	// Private key file
-	priv, err := os.ReadFile("../../cmd/server/privateKey.pem")
+	priv, err := os.ReadFile("../../cmd/tls/key.pem")
 	require.NoError(t, err)
 
 	cipherByte, err := Encrypt(acc, pkb)

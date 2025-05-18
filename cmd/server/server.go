@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -13,7 +14,11 @@ import (
 	"syscall"
 
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 
+	pb "gorono/cmd/proto"
+
+	"gorono/internal/gremote"
 	"gorono/internal/handlera"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
@@ -70,11 +75,11 @@ func Run() (err error) {
 	//router.Use(middlas.NoSugarLogging)	// или NoSugarLogging - или WithLogging ZAP логирование
 	router.Use(middlas.WithLogging)
 	router.Use(middlas.CryptoHandleDecoder)
+	router.Use(middlas.IpcidrCheck)
 
 	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
 	//
-	var srv = http.Server{Addr: Host, Handler: router}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -86,15 +91,72 @@ func Run() (err error) {
 	}()
 
 	var wg sync.WaitGroup
+
+	// HTTP server gouroutine launch
+	var httpServer = http.Server{Addr: Host, Handler: router}
 	wg.Add(1)
-	go func() error {
-		return srv.ListenAndServe()
+	go func() {
+
+		// ListenAndServe always returns a non-nil error.
+		// After Server.Shutdown or Server.Close, the returned error is ErrServerClosed. иначе фатал
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
 	}()
 
-	go func() error {
+	// gRPC server, default port ":3200" or from parameters
+	listen, err := net.Listen("tcp", models.Gport)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// серверу для шифрования необходимы оба сертификата, приватный и публичный
+	// for testing purposes use own certificates - потому что в задании без grpc для сервера задаётся только приватный сертификат
+	var grpcServer *grpc.Server
+	//	if isCoded {
+	// Load TLS credentials
+	creds, err := LoadTLSCredentials("../tls/cert.pem", "../tls/key.pem")
+	if err != nil {
+		log.Fatalf("failed to load TLS credentials: %v", err)
+	}
+	grpcServer = grpc.NewServer(grpc.UnaryInterceptor(middlas.OurInterceptor), grpc.Creds(creds))
+	//} else {
+	// без шифровки
+	//grpcServer = grpc.NewServer()
+	//}
+
+	// регистрируем сервис
+	pb.RegisterMetricServer(grpcServer, &gremote.MetricServer{})
+
+	// gRPC server gouroutine launch
+	wg.Add(1)
+	go func() {
+		fmt.Println("Сервер gRPC начал работу")
+		// получаем запрос gRPC
+		if err := grpcServer.Serve(listen); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	// graceful shutdown when cancel() of context sends Done
+	go func() {
 		<-ctx.Done()
-		wg.Done()
-		return srv.Shutdown(ctx)
+		defer wg.Done() // for http server
+		defer wg.Done() // for grpc server
+		// Attempt graceful shutdown
+		if err := httpServer.Shutdown(ctx); err != nil {
+			log.Printf("Graceful shutdown failed: %v", err)
+			if err := httpServer.Close(); err != nil {
+				log.Fatalf("Forced shutdown failed: %v", err)
+			}
+		} else {
+			defer fmt.Println("Сервер HTTP Shutdown gracefully")
+		}
+		// GracefulStop stops the gRPC server gracefully.
+		// It stops the server from accepting new connections and RPCs and blocks until all the pending RPCs are finished.
+		grpcServer.GracefulStop()
+		// defer для порядку
+		defer fmt.Println("Сервер gRPC Shutdown gracefully")
 	}()
 
 	// запись метрик в файл
@@ -107,7 +169,7 @@ func Run() (err error) {
 
 	models.Inter.Close()
 
-	log.Println("Server Shutdown gracefully")
+	log.Println("All services Shutdown gracefully")
 
 	return err
 }

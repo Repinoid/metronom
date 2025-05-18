@@ -43,7 +43,8 @@ var (
 	ReStore       = true            // надо ли сохранять метрики в файл
 	DBEndPoint    = ""              // endpoint базы данных
 	//Key           string = ""              // file name with private key
-	Key        string = "privateKey.pem" // file name with private key
+	Key        string = "../tls/key.pem" // file name with private key
 	PrivateKey string = ""               // private key, содержится в файле с именем в Key
-
+	Cidr       string = ""               //  строковое представление бесклассовой адресации (CIDR)
+	Gport      string = ":3200"          // GRPC порт, по умолчанию
 )

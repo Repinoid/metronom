@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"strconv"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc/credentials"
 
 	"gorono/internal/basis"
 	"gorono/internal/memos"
@@ -24,6 +27,9 @@ type flagServer struct {
 	StoreFile     string `json:"store_file"`     // аналог переменной окружения STORE_FILE или -f
 	DatabaseDsn   string `json:"database_dsn"`   // аналог переменной окружения DATABASE_DSN или флага -d
 	CryptoKey     string `json:"crypto_key"`     // аналог переменной окружения CRYPTO_KEY или флага -crypto-key
+	TrustedSubnet string `json:"trusted_subnet"` // строковое представление бесклассовой адресации (CIDR)
+	// установлено дефолтное значение ":3200"
+	GrpcPort string `json:"grpc_port"` // gRPC server, port
 }
 
 // initServer () - инициализация параметров сервера и endpoint базы данных из аргументов командной строки
@@ -44,13 +50,17 @@ func InitServer() error {
 	var dbFlag string
 	var keyFlag string
 	var configFlag string
+	var cidrFlag string
+	var grpcFlag string
 
 	flag.StringVar(&configFlag, "c", "", "путь до файла с JSON конфигурации")      // "" - по умолчанию пусто
 	flag.StringVar(&configFlag, "config", "", "путь до файла с JSON конфигурации") // -c = -config
 	flag.StringVar(&keyFlag, "crypto-key", models.Key, "путь до файла с private ключом")
 	flag.StringVar(&dbFlag, "d", models.DBEndPoint, "Data Base endpoint")
+	flag.StringVar(&cidrFlag, "t", models.Cidr, "CIDR")
 	flag.StringVar(&hostFlag, "a", Host, "Only -a={host:port} flag is allowed here")
 	flag.StringVar(&fileStoreFlag, "f", models.FileStorePath, "-f= file to save memory storage")
+	flag.StringVar(&grpcFlag, "g", models.Gport, "-g= GRPC port")
 	storeIntervalFlag := flag.Int("i", models.StoreInterval, "storeInterval")
 	restoreFlag := flag.Bool("r", models.ReStore, "is restore mode on")
 
@@ -63,6 +73,7 @@ func InitServer() error {
 			return err
 		}
 		var prapor flagServer
+		// unmarshal parameters from JSON file
 		err = json.Unmarshal(params, &prapor)
 		if err != nil {
 			return err
@@ -79,6 +90,7 @@ func InitServer() error {
 		models.Key = prapor.CryptoKey
 		models.FileStorePath = prapor.StoreFile
 		models.DBEndPoint = prapor.DatabaseDsn
+		models.Cidr = prapor.TrustedSubnet
 	}
 	// параметры из флагов командной строки, которые есть
 	if hostFlag != "" {
@@ -99,6 +111,12 @@ func InitServer() error {
 	if keyFlag != "" {
 		models.Key = keyFlag
 	}
+	if cidrFlag != "" {
+		models.Cidr = cidrFlag
+	}
+	if grpcFlag != "" {
+		models.Gport = grpcFlag
+	}
 	// параметры из переменных окружения
 	hoster, exists := os.LookupEnv("ADDRESS")
 	if exists {
@@ -116,6 +134,11 @@ func InitServer() error {
 	if exists {
 		models.Key = enva
 	}
+	enva, exists = os.LookupEnv("TRUSTED_SUBNET")
+	if exists {
+		models.Cidr = enva
+	}
+
 	enva, exists = os.LookupEnv("FILE_STORAGE_PATH")
 	if exists {
 		models.FileStorePath = enva
@@ -135,6 +158,14 @@ func InitServer() error {
 
 	if hostFlag == "" {
 		return fmt.Errorf("no host parsed from arg string")
+	}
+	// если есть строковое представление бесклассовой адресации (CIDR)
+	if models.Cidr != "" {
+		_, _, err := net.ParseCIDR(models.Cidr)
+		// если оно поганое выходим с ошибкой
+		if err != nil {
+			return fmt.Errorf("CIDR %s is wrong %v", models.Cidr, err)
+		}
 	}
 
 	if models.Key != "" {
@@ -168,4 +199,19 @@ func InitServer() error {
 	models.Inter = dbStorage // data base as Metric Storage
 
 	return nil
+}
+
+// loadTLSCredentials загрузка сертификатов
+func LoadTLSCredentials(cert, key string) (credentials.TransportCredentials, error) {
+	// Load server's certificate and private key
+	serverCert, err := tls.LoadX509KeyPair(cert, key)
+	if err != nil {
+		return nil, err
+	}
+	// Create the credentials and return it
+	config := &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientAuth:   tls.NoClientCert,
+	}
+	return credentials.NewTLS(config), nil
 }

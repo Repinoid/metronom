@@ -80,7 +80,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(rwr, `{"status":"StatusBadRequest"}`)
 		return
 	}
-	
+
 	err = basis.RetryMetricWrapper(models.Inter.PutMetric)(req.Context(), &metr, nil)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)
@@ -106,6 +106,7 @@ func PutJSONMetric(rwr http.ResponseWriter, req *http.Request) {
 // Buncheras - размещает слайс метрик. В т.ч. от Агента.
 // router.HandleFunc("/updates/", handlera.Buncheras).Methods("POST")
 func Buncheras(rwr http.ResponseWriter, req *http.Request) {
+
 	telo, err := io.ReadAll(req.Body)
 	if err != nil {
 		rwr.WriteHeader(http.StatusBadRequest)

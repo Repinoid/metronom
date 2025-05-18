@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package gorono;
+
+option go_package = "gorono/proto";
+
+// Metric - методы
+service Metric {
+  rpc AddBunch(Bunch) returns (BunchResponse);
+  rpc AddOneMetric(Metr) returns (BunchResponse);
+  rpc GetOneMetric(Metr) returns (ReturnOneMetric);
+  rpc GetAllMetrix(Bunch) returns (ReturnAllMetrics);
+}
+// Metr - а-ля структура метрики
+message  Metr  {
+	string  ID      = 1; 
+	string  MType   = 2;    
+	int64   Delta   = 3;
+	double  Value   = 4;
+}
+// слайс метрик
+message Bunch {
+    repeated Metr Meters = 1;
+}
+// ответ засыла метрик
+message BunchResponse {
+  string error = 1; // ошибка
+  string outData = 2;
+}
+//
+message ReturnAllMetrics {
+  repeated Metr Meters = 1;
+  string error = 2; 
+}
+//
+message ReturnOneMetric {
+  Metr Meter = 1;
+  string error = 2; 
+}
