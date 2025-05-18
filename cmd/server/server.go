@@ -18,6 +18,7 @@ import (
 
 	pb "gorono/cmd/proto"
 
+	"gorono/internal/gremote"
 	"gorono/internal/handlera"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
@@ -74,6 +75,7 @@ func Run() (err error) {
 	//router.Use(middlas.NoSugarLogging)	// или NoSugarLogging - или WithLogging ZAP логирование
 	router.Use(middlas.WithLogging)
 	router.Use(middlas.CryptoHandleDecoder)
+	router.Use(middlas.IpcidrCheck)
 
 	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
@@ -113,18 +115,18 @@ func Run() (err error) {
 	var grpcServer *grpc.Server
 	//	if isCoded {
 	// Load TLS credentials
-	creds, err := loadTLSCredentials("../tls/cert.pem", "../tls/key.pem")
+	creds, err := LoadTLSCredentials("../tls/cert.pem", "../tls/key.pem")
 	if err != nil {
 		log.Fatalf("failed to load TLS credentials: %v", err)
 	}
-	grpcServer = grpc.NewServer(grpc.Creds(creds))
+	grpcServer = grpc.NewServer(grpc.UnaryInterceptor(middlas.OurInterceptor), grpc.Creds(creds))
 	//} else {
 	// без шифровки
 	//grpcServer = grpc.NewServer()
 	//}
 
 	// регистрируем сервис
-	pb.RegisterMetricServer(grpcServer, &MetricServer{})
+	pb.RegisterMetricServer(grpcServer, &gremote.MetricServer{})
 
 	// gRPC server gouroutine launch
 	wg.Add(1)

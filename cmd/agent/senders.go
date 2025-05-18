@@ -125,11 +125,13 @@ func sendMetricsByGrpc(ctx context.Context, bunch []models.Metrics) (err error) 
 	// устанавливаем соединение с сервером
 	tlsCreds, err := loadClientTLSCredentials(cryptoKeyFile)
 	if err != nil {
-		log.Fatal("cannot load TLS credentials: ", err)
+		log.Printf("cannot load TLS credentials: %v", err)
+		return
 	}
 	conn, err = grpc.NewClient(gPort, grpc.WithTransportCredentials(tlsCreds))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 	defer conn.Close()
 
@@ -142,7 +144,8 @@ func sendMetricsByGrpc(ctx context.Context, bunch []models.Metrics) (err error) 
 		Meters: gMetras,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 	if resp.Error != "" {
 		fmt.Println(resp.Error)

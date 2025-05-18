@@ -135,6 +135,7 @@ func (x *Bunch) GetMeters() []*Metr {
 	return nil
 }
 
+// ответ засыла метрик
 type BunchResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"` // ошибка
@@ -187,6 +188,110 @@ func (x *BunchResponse) GetOutData() string {
 	return ""
 }
 
+type ReturnAllMetrics struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meters        []*Metr                `protobuf:"bytes,1,rep,name=Meters,proto3" json:"Meters,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReturnAllMetrics) Reset() {
+	*x = ReturnAllMetrics{}
+	mi := &file_proto_gorono_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReturnAllMetrics) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReturnAllMetrics) ProtoMessage() {}
+
+func (x *ReturnAllMetrics) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_gorono_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReturnAllMetrics.ProtoReflect.Descriptor instead.
+func (*ReturnAllMetrics) Descriptor() ([]byte, []int) {
+	return file_proto_gorono_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ReturnAllMetrics) GetMeters() []*Metr {
+	if x != nil {
+		return x.Meters
+	}
+	return nil
+}
+
+func (x *ReturnAllMetrics) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type ReturnOneMetric struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meter         *Metr                  `protobuf:"bytes,1,opt,name=Meter,proto3" json:"Meter,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReturnOneMetric) Reset() {
+	*x = ReturnOneMetric{}
+	mi := &file_proto_gorono_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReturnOneMetric) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReturnOneMetric) ProtoMessage() {}
+
+func (x *ReturnOneMetric) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_gorono_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReturnOneMetric.ProtoReflect.Descriptor instead.
+func (*ReturnOneMetric) Descriptor() ([]byte, []int) {
+	return file_proto_gorono_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ReturnOneMetric) GetMeter() *Metr {
+	if x != nil {
+		return x.Meter
+	}
+	return nil
+}
+
+func (x *ReturnOneMetric) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_proto_gorono_proto protoreflect.FileDescriptor
 
 const file_proto_gorono_proto_rawDesc = "" +
@@ -201,9 +306,18 @@ const file_proto_gorono_proto_rawDesc = "" +
 	"\x06Meters\x18\x01 \x03(\v2\f.gorono.MetrR\x06Meters\"?\n" +
 	"\rBunchResponse\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x12\x18\n" +
-	"\aoutData\x18\x02 \x01(\tR\aoutData2:\n" +
+	"\aoutData\x18\x02 \x01(\tR\aoutData\"N\n" +
+	"\x10ReturnAllMetrics\x12$\n" +
+	"\x06Meters\x18\x01 \x03(\v2\f.gorono.MetrR\x06Meters\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"K\n" +
+	"\x0fReturnOneMetric\x12\"\n" +
+	"\x05Meter\x18\x01 \x01(\v2\f.gorono.MetrR\x05Meter\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error2\xdf\x01\n" +
 	"\x06Metric\x120\n" +
-	"\bAddBunch\x12\r.gorono.Bunch\x1a\x15.gorono.BunchResponseB\x0eZ\fgorono/protob\x06proto3"
+	"\bAddBunch\x12\r.gorono.Bunch\x1a\x15.gorono.BunchResponse\x123\n" +
+	"\fAddOneMetric\x12\f.gorono.Metr\x1a\x15.gorono.BunchResponse\x125\n" +
+	"\fGetOneMetric\x12\f.gorono.Metr\x1a\x17.gorono.ReturnOneMetric\x127\n" +
+	"\fGetAllMetrix\x12\r.gorono.Bunch\x1a\x18.gorono.ReturnAllMetricsB\x0eZ\fgorono/protob\x06proto3"
 
 var (
 	file_proto_gorono_proto_rawDescOnce sync.Once
@@ -217,21 +331,31 @@ func file_proto_gorono_proto_rawDescGZIP() []byte {
 	return file_proto_gorono_proto_rawDescData
 }
 
-var file_proto_gorono_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_proto_gorono_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_proto_gorono_proto_goTypes = []any{
-	(*Metr)(nil),          // 0: gorono.Metr
-	(*Bunch)(nil),         // 1: gorono.Bunch
-	(*BunchResponse)(nil), // 2: gorono.BunchResponse
+	(*Metr)(nil),             // 0: gorono.Metr
+	(*Bunch)(nil),            // 1: gorono.Bunch
+	(*BunchResponse)(nil),    // 2: gorono.BunchResponse
+	(*ReturnAllMetrics)(nil), // 3: gorono.ReturnAllMetrics
+	(*ReturnOneMetric)(nil),  // 4: gorono.ReturnOneMetric
 }
 var file_proto_gorono_proto_depIdxs = []int32{
 	0, // 0: gorono.Bunch.Meters:type_name -> gorono.Metr
-	1, // 1: gorono.Metric.AddBunch:input_type -> gorono.Bunch
-	2, // 2: gorono.Metric.AddBunch:output_type -> gorono.BunchResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 1: gorono.ReturnAllMetrics.Meters:type_name -> gorono.Metr
+	0, // 2: gorono.ReturnOneMetric.Meter:type_name -> gorono.Metr
+	1, // 3: gorono.Metric.AddBunch:input_type -> gorono.Bunch
+	0, // 4: gorono.Metric.AddOneMetric:input_type -> gorono.Metr
+	0, // 5: gorono.Metric.GetOneMetric:input_type -> gorono.Metr
+	1, // 6: gorono.Metric.GetAllMetrix:input_type -> gorono.Bunch
+	2, // 7: gorono.Metric.AddBunch:output_type -> gorono.BunchResponse
+	2, // 8: gorono.Metric.AddOneMetric:output_type -> gorono.BunchResponse
+	4, // 9: gorono.Metric.GetOneMetric:output_type -> gorono.ReturnOneMetric
+	3, // 10: gorono.Metric.GetAllMetrix:output_type -> gorono.ReturnAllMetrics
+	7, // [7:11] is the sub-list for method output_type
+	3, // [3:7] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_proto_gorono_proto_init() }
@@ -245,7 +369,7 @@ func file_proto_gorono_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_gorono_proto_rawDesc), len(file_proto_gorono_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

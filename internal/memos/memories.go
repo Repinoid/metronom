@@ -70,6 +70,7 @@ func (memorial *MemoryStorageStruct) GetMetric(ctx context.Context, metr *models
 			metr.Delta = &out
 			break
 		}
+		return fmt.Errorf("unknown metric %+v", metr) //
 	default:
 		return fmt.Errorf("wrong type %s", metr.MType)
 	}

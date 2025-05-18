@@ -4,13 +4,19 @@ package middlas
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"gorono/internal/models"
 	"gorono/internal/privacy"
@@ -122,6 +128,39 @@ func GzipHandleEncoder(next http.Handler) http.Handler {
 }
 
 // GzipHandleDecoder middleware распаковки
+func IpcidrCheck(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
+
+		var ipnet *net.IPNet
+		// если есть СИДР - проверяем вхождение в подсеть переданного агентом хеадера X-Real-IP
+		if models.Cidr != "" {
+			// третий параметр - ошибка, проверена при инициализации сервера
+			_, ipnet, _ = net.ParseCIDR(models.Cidr)
+
+			// get X-Real-IP from agent request header
+			agentIP, err := ipFromHeader(req)
+			if err != nil {
+				rwr.WriteHeader(http.StatusForbidden)
+				// зaпись ошибки в формате JSON
+				fmt.Fprintf(rwr, `{"Error":"%v"}`, err)
+				models.Sugar.Debugf("нет хеадера X-Real-IP %+v\n", err)
+				io.WriteString(rwr, err.Error())
+				return
+			}
+			aIP := net.ParseIP(agentIP.String())
+			// если aIP (который X-Real-IP от агента) НЕ входит в сабнет CIDR (ipnet)
+			if !ipnet.Contains(aIP) {
+				rwr.WriteHeader(http.StatusForbidden)
+				fmt.Fprintf(rwr, `{"%s NOT in CIDR ":"%s"}`, aIP, ipnet)
+				models.Sugar.Debugf("%s NOT in CIDR (ipnet) %s\n", aIP, ipnet)
+				return
+			}
+		}
+		next.ServeHTTP(rwr, req)
+	})
+}
+
+// GzipHandleDecoder middleware распаковки
 func GzipHandleDecoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rwr http.ResponseWriter, req *http.Request) {
 
@@ -182,4 +221,58 @@ func CryptoHandleDecoder(next http.Handler) http.Handler {
 		next.ServeHTTP(rwr, req)
 
 	})
+}
+
+// ipFromHeader получает заголовок X-Real-IP, в котором должен содержаться IP-адрес хоста агента.
+func ipFromHeader(r *http.Request) (net.IP, error) {
+	// смотрим заголовок запроса X-Real-IP
+	ipStr := r.Header.Get("X-Real-IP")
+	// парсим ip
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		// если заголовок X-Real-IP пуст, пробуем X-Forwarded-For
+		// этот заголовок содержит адреса отправителя и промежуточных прокси
+		// в виде 203.0.113.195, 70.41.3.18, 150.172.238.178
+		ips := r.Header.Get("X-Forwarded-For")
+		// разделяем цепочку адресов
+		ipStrs := strings.Split(ips, ",")
+		// интересует только первый
+		ipStr = ipStrs[0]
+		// парсим
+		ip = net.ParseIP(ipStr)
+	}
+	if ip == nil {
+		return nil, fmt.Errorf("failed parse ip from http header")
+	}
+	return ip, nil
+}
+
+func OurInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+
+	var ipnet *net.IPNet
+	// если есть СИДР - проверяем вхождение в подсеть переданного агентом хеадера X-Real-IP
+	if models.Cidr != "" {
+		// третий параметр - ошибка, проверена при инициализации сервера
+		_, ipnet, _ = net.ParseCIDR(models.Cidr)
+
+		agentIP := ""
+		md, ok := metadata.FromIncomingContext(ctx)
+		if ok {
+			values := md.Get("X-Real-IP")
+			if len(values) == 0 {
+				models.Sugar.Debugf("нет хеадера X-Real-IP\n")
+				return nil, status.Error(codes.NotFound, "нет X-Real-IP")
+			}
+			agentIP = values[0]
+		}
+
+		aIP := net.ParseIP(agentIP)
+		// если aIP (который X-Real-IP от агента) НЕ входит в сабнет CIDR (ipnet)
+		if !ipnet.Contains(aIP) {
+			models.Sugar.Debugf("%s НЕ входит в сабнет %s", agentIP, ipnet)
+			return nil, status.Errorf(codes.PermissionDenied, "%s НЕ входит в сабнет %s", agentIP, ipnet)
+		}
+	}
+
+	return handler(ctx, req)
 }

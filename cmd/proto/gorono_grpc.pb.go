@@ -19,16 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Metric_AddBunch_FullMethodName = "/gorono.Metric/AddBunch"
+	Metric_AddBunch_FullMethodName     = "/gorono.Metric/AddBunch"
+	Metric_AddOneMetric_FullMethodName = "/gorono.Metric/AddOneMetric"
+	Metric_GetOneMetric_FullMethodName = "/gorono.Metric/GetOneMetric"
+	Metric_GetAllMetrix_FullMethodName = "/gorono.Metric/GetAllMetrix"
 )
 
 // MetricClient is the client API for Metric service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// Metric - нужен всего один метод по записи слайса метрик
+// Metric - методы
 type MetricClient interface {
 	AddBunch(ctx context.Context, in *Bunch, opts ...grpc.CallOption) (*BunchResponse, error)
+	AddOneMetric(ctx context.Context, in *Metr, opts ...grpc.CallOption) (*BunchResponse, error)
+	GetOneMetric(ctx context.Context, in *Metr, opts ...grpc.CallOption) (*ReturnOneMetric, error)
+	GetAllMetrix(ctx context.Context, in *Bunch, opts ...grpc.CallOption) (*ReturnAllMetrics, error)
 }
 
 type metricClient struct {
@@ -49,13 +55,46 @@ func (c *metricClient) AddBunch(ctx context.Context, in *Bunch, opts ...grpc.Cal
 	return out, nil
 }
 
+func (c *metricClient) AddOneMetric(ctx context.Context, in *Metr, opts ...grpc.CallOption) (*BunchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BunchResponse)
+	err := c.cc.Invoke(ctx, Metric_AddOneMetric_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metricClient) GetOneMetric(ctx context.Context, in *Metr, opts ...grpc.CallOption) (*ReturnOneMetric, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReturnOneMetric)
+	err := c.cc.Invoke(ctx, Metric_GetOneMetric_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metricClient) GetAllMetrix(ctx context.Context, in *Bunch, opts ...grpc.CallOption) (*ReturnAllMetrics, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReturnAllMetrics)
+	err := c.cc.Invoke(ctx, Metric_GetAllMetrix_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetricServer is the server API for Metric service.
 // All implementations must embed UnimplementedMetricServer
 // for forward compatibility.
 //
-// Metric - нужен всего один метод по записи слайса метрик
+// Metric - методы
 type MetricServer interface {
 	AddBunch(context.Context, *Bunch) (*BunchResponse, error)
+	AddOneMetric(context.Context, *Metr) (*BunchResponse, error)
+	GetOneMetric(context.Context, *Metr) (*ReturnOneMetric, error)
+	GetAllMetrix(context.Context, *Bunch) (*ReturnAllMetrics, error)
 	mustEmbedUnimplementedMetricServer()
 }
 
@@ -68,6 +107,15 @@ type UnimplementedMetricServer struct{}
 
 func (UnimplementedMetricServer) AddBunch(context.Context, *Bunch) (*BunchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddBunch not implemented")
+}
+func (UnimplementedMetricServer) AddOneMetric(context.Context, *Metr) (*BunchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddOneMetric not implemented")
+}
+func (UnimplementedMetricServer) GetOneMetric(context.Context, *Metr) (*ReturnOneMetric, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOneMetric not implemented")
+}
+func (UnimplementedMetricServer) GetAllMetrix(context.Context, *Bunch) (*ReturnAllMetrics, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllMetrix not implemented")
 }
 func (UnimplementedMetricServer) mustEmbedUnimplementedMetricServer() {}
 func (UnimplementedMetricServer) testEmbeddedByValue()                {}
@@ -108,6 +156,60 @@ func _Metric_AddBunch_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Metric_AddOneMetric_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Metr)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricServer).AddOneMetric(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Metric_AddOneMetric_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricServer).AddOneMetric(ctx, req.(*Metr))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Metric_GetOneMetric_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Metr)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricServer).GetOneMetric(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Metric_GetOneMetric_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricServer).GetOneMetric(ctx, req.(*Metr))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Metric_GetAllMetrix_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Bunch)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricServer).GetAllMetrix(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Metric_GetAllMetrix_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricServer).GetAllMetrix(ctx, req.(*Bunch))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Metric_ServiceDesc is the grpc.ServiceDesc for Metric service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -118,6 +220,18 @@ var Metric_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddBunch",
 			Handler:    _Metric_AddBunch_Handler,
+		},
+		{
+			MethodName: "AddOneMetric",
+			Handler:    _Metric_AddOneMetric_Handler,
+		},
+		{
+			MethodName: "GetOneMetric",
+			Handler:    _Metric_GetOneMetric_Handler,
+		},
+		{
+			MethodName: "GetAllMetrix",
+			Handler:    _Metric_GetAllMetrix_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

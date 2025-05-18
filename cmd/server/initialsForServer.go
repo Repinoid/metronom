@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc/credentials"
 
 	"gorono/internal/basis"
 	"gorono/internal/memos"
@@ -197,4 +199,19 @@ func InitServer() error {
 	models.Inter = dbStorage // data base as Metric Storage
 
 	return nil
+}
+
+// loadTLSCredentials загрузка сертификатов
+func LoadTLSCredentials(cert, key string) (credentials.TransportCredentials, error) {
+	// Load server's certificate and private key
+	serverCert, err := tls.LoadX509KeyPair(cert, key)
+	if err != nil {
+		return nil, err
+	}
+	// Create the credentials and return it
+	config := &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientAuth:   tls.NoClientCert,
+	}
+	return credentials.NewTLS(config), nil
 }

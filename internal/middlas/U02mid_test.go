@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 )
 
 // хандлер для теста - что пришло, то и ушло
@@ -69,11 +70,11 @@ func (suite *TstMid) Test_cryptaDecoder() {
 	suite.Assert().NoError(err)
 
 	// Public Key File
-	pkb, err := os.ReadFile("../../cmd/agent/cert.pem")
+	pkb, err := os.ReadFile("../../cmd/tls/cert.pem")
 	suite.Assert().NoError(err)
 
 	// Private key file
-	privK, err := os.ReadFile("../../cmd/server/privateKey.pem")
+	privK, err := os.ReadFile("../../cmd/tls/key.pem")
 	suite.Assert().NoError(err)
 	models.PrivateKey = string(privK)
 
@@ -96,4 +97,82 @@ func (suite *TstMid) Test_cryptaDecoder() {
 
 	a := Ptr(4.5)
 	suite.Assert().Equal(*a, 4.5)
+}
+
+func (suite *TstMid) TestCidras() {
+
+	tstBuf := []byte("qwerty")
+
+	request := httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(tstBuf))
+	w := httptest.NewRecorder()
+
+	fu := thecap
+	hfunc := http.HandlerFunc(fu) // make handler from function
+
+	// test with NO cidr check, coz models.Cidr = ""
+	models.Cidr = ""
+	hh := IpcidrCheck(hfunc)
+	hh.ServeHTTP(w, request)
+	res := w.Body
+	telo, err := io.ReadAll(res)
+	suite.Assert().NoError(err)
+	suite.Assert().Equal(tstBuf, telo)
+
+	request = httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(tstBuf))
+	w = httptest.NewRecorder()
+
+	// test with cidr check, no "X-Real-IP" in header
+	models.Cidr = "127.0.0.0/24"
+	hh = IpcidrCheck(hfunc)
+	hh.ServeHTTP(w, request)
+	res = w.Body
+	telo, err = io.ReadAll(res)
+	boo := strings.Contains(string(telo), "failed parse ip")
+	suite.Assert().NoError(err)
+	suite.Assert().True(boo)
+
+	request = httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(tstBuf))
+	w = httptest.NewRecorder()
+
+	// test with cidr check, WITH "X-Real-IP" in header
+	models.Cidr = "127.0.0.0/24"
+	request.Header.Add("X-Real-IP", "127.0.0.1")
+
+	hh = IpcidrCheck(hfunc)
+	hh.ServeHTTP(w, request)
+	res = w.Body
+	telo, err = io.ReadAll(res)
+	suite.Assert().NoError(err)
+	suite.Assert().Equal(tstBuf, telo)
+
+	request = httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(tstBuf))
+	w = httptest.NewRecorder()
+
+	// test with cidr check, WITH "X-Forwarded-For" in header
+	models.Cidr = "127.0.0.0/24"
+	request.Header.Add("X-Forwarded-For", "127.0.0.1")
+
+	hh = IpcidrCheck(hfunc)
+	hh.ServeHTTP(w, request)
+	res = w.Body
+	telo, err = io.ReadAll(res)
+	suite.Assert().NoError(err)
+	suite.Assert().Equal(tstBuf, telo)
+
+	request = httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(tstBuf))
+	w = httptest.NewRecorder()
+
+	// test with cidr check, wrong CIDR
+	models.Cidr = "127.1.0.0/24"
+	request.Header.Add("X-Forwarded-For", "127.0.0.1")
+
+	hh = IpcidrCheck(hfunc)
+	hh.ServeHTTP(w, request)
+	res = w.Body
+	telo, err = io.ReadAll(res)
+
+	boo = strings.Contains(string(telo), "NOT in CIDR")
+	suite.Assert().NoError(err)
+	suite.Assert().True(boo)
+
 }
