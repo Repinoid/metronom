@@ -136,14 +136,7 @@ func (h *Handler) Login(rwr http.ResponseWriter, req *http.Request) {
 	}
 
 	// Создаем токен
-	dbStore, ok := h.Store.(*DBUserStore)
-	if !ok {
-		rwr.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(rwr).Encode(map[string]string{"error": "Internal error"})
-		return
-	}
-
-	token, err := dbStore.CreateToken(req.Context(), user.ID)
+	token, err := h.Store.CreateToken(req.Context(), user.ID)
 	if err != nil {
 		rwr.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(rwr).Encode(map[string]string{"error": "Error creating token"})

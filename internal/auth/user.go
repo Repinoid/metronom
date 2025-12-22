@@ -42,6 +42,7 @@ type LoginResponse struct {
 type UserStore interface {
 	CreateUser(ctx context.Context, username, passwordHash string) (*User, error)
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
+	CreateToken(ctx context.Context, userID int) (string, error)
 	ValidateToken(ctx context.Context, token string) (*User, error)
 }
 
