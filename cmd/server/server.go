@@ -14,6 +14,8 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"gorono/internal/auth"
+	"gorono/internal/basis"
 	"gorono/internal/handlera"
 	"gorono/internal/middlas"
 	"gorono/internal/models"
@@ -56,6 +58,21 @@ func main() {
 func Run() (err error) {
 
 	router := mux.NewRouter()
+	
+	// Инициализируем auth handler если есть подключение к БД
+	var authHandler *auth.Handler
+	if dbStorage, ok := models.Inter.(*basis.DBstruct); ok && dbStorage != nil {
+		userStore, err := auth.NewDBUserStore(dbStorage.DB)
+		if err != nil {
+			log.Printf("Warning: Could not initialize auth system: %v", err)
+		} else {
+			authHandler = auth.NewHandler(userStore)
+			// Регистрация и логин endpoints
+			router.HandleFunc("/register", authHandler.Register).Methods("POST")
+			router.HandleFunc("/login", authHandler.Login).Methods("POST")
+		}
+	}
+	
 	router.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", handlera.PutMetric).Methods("POST")
 	router.HandleFunc("/update/", handlera.PutJSONMetric).Methods("POST")
 	router.HandleFunc("/updates/", handlera.Buncheras).Methods("POST")
